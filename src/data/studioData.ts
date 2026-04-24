@@ -1,7 +1,7 @@
 import type { MainTrackState, SampleItem } from "@/types/studio";
 
-export const DEFAULT_MAIN_AUDIO_URL = "/op.mp3";
-export const DEFAULT_MAIN_AUDIO_FILE_NAME = "op.mp3";
+export const BUNDLED_SAMPLE_AUDIO_URL = "/op.mp3";
+export const BUNDLED_SAMPLE_AUDIO_FILE_NAME = "op.mp3";
 
 export const defaultMainTrack: MainTrackState = {
   fileName: null,
@@ -20,7 +20,7 @@ export const initialSamples: SampleItem[] = [
     trackId: "clips",
     duration: 0,
     color: "#e879f9",
-    fileName: DEFAULT_MAIN_AUDIO_FILE_NAME,
-    objectUrl: DEFAULT_MAIN_AUDIO_URL,
+    fileName: BUNDLED_SAMPLE_AUDIO_FILE_NAME,
+    objectUrl: BUNDLED_SAMPLE_AUDIO_URL,
   },
 ];

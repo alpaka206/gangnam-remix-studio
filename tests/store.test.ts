@@ -22,6 +22,21 @@ describe("studio store", () => {
     expect(state.clips).toHaveLength(0);
   });
 
+  it("does not allow the bundled op.mp3 sound to become the main track", () => {
+    useStudioStore.getState().setMainTrack({
+      fileName: "op.mp3",
+      objectUrl: "/op.mp3",
+      duration: 10,
+      status: "ready",
+    });
+
+    const state = useStudioStore.getState();
+
+    expect(state.mainTrack.fileName).toBeNull();
+    expect(state.mainTrack.objectUrl).toBeNull();
+    expect(state.mainTrack.status).toBe("empty");
+  });
+
   it("can add the bundled op.mp3 source repeatedly", () => {
     const firstClipId = useStudioStore.getState().addSampleClip("bundled-op");
     const secondClipId = useStudioStore

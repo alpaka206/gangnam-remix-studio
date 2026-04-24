@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import {
-  DEFAULT_MAIN_AUDIO_FILE_NAME,
+  BUNDLED_SAMPLE_AUDIO_FILE_NAME,
+  BUNDLED_SAMPLE_AUDIO_URL,
   defaultMainTrack,
   initialSamples,
 } from "@/data/studioData";
@@ -80,11 +81,7 @@ export const useStudioStore = create<StudioStore>()(
       setSnapToBeat: (enabled) => set({ snapToBeat: enabled }),
       setMainTrack: (track) =>
         set({
-          mainTrack: {
-            ...track,
-            duration: Math.max(0, track.duration),
-            status: track.objectUrl ? "ready" : track.status,
-          },
+          mainTrack: normalizeMainTrack(track),
         }),
       addUploadedSamples: (samples) =>
         set((state) => {
@@ -295,6 +292,10 @@ function cloneSamples(samples: SampleItem[]) {
 }
 
 function sanitizeMainTrackForStorage(track: MainTrackState): MainTrackState {
+  if (isBundledSampleTrack(track)) {
+    return { ...defaultMainTrack };
+  }
+
   return {
     ...track,
     objectUrl: null,
@@ -307,7 +308,7 @@ function restoreMainTrack(track?: MainTrackState): MainTrackState {
     return { ...defaultMainTrack };
   }
 
-  if (!track.fileName || track.fileName === DEFAULT_MAIN_AUDIO_FILE_NAME) {
+  if (!track.fileName || isBundledSampleTrack(track)) {
     return { ...defaultMainTrack, duration: track.duration || 0 };
   }
 
@@ -316,6 +317,25 @@ function restoreMainTrack(track?: MainTrackState): MainTrackState {
     objectUrl: null,
     status: track.fileName ? "stale" : "empty",
   };
+}
+
+function normalizeMainTrack(track: MainTrackState): MainTrackState {
+  if (isBundledSampleTrack(track)) {
+    return { ...defaultMainTrack };
+  }
+
+  return {
+    ...track,
+    duration: Math.max(0, track.duration),
+    status: track.objectUrl ? "ready" : track.status,
+  };
+}
+
+function isBundledSampleTrack(track: MainTrackState) {
+  return (
+    track.fileName === BUNDLED_SAMPLE_AUDIO_FILE_NAME ||
+    track.objectUrl === BUNDLED_SAMPLE_AUDIO_URL
+  );
 }
 
 function filterUploadedClips(clips: StudioClip[]) {

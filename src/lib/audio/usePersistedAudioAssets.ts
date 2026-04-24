@@ -2,7 +2,11 @@
 
 import { useEffect } from "react";
 
-import { DEFAULT_MAIN_AUDIO_URL } from "@/data/studioData";
+import {
+  BUNDLED_SAMPLE_AUDIO_FILE_NAME,
+  BUNDLED_SAMPLE_AUDIO_URL,
+  defaultMainTrack,
+} from "@/data/studioData";
 import { MAIN_AUDIO_ASSET_ID, registerAudioAsset } from "@/lib/audio/assets";
 import { getAudioUrlDuration } from "@/lib/audio/files";
 import { loadPersistentAudioAsset } from "@/lib/audio/persistentAssets";
@@ -20,29 +24,13 @@ export function usePersistedAudioAssets() {
   );
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadBundledMainMetadata() {
-      if (
-        mainTrack.objectUrl !== DEFAULT_MAIN_AUDIO_URL ||
-        mainTrack.duration > 0
-      ) {
-        return;
-      }
-
-      const duration = await getAudioUrlDuration(DEFAULT_MAIN_AUDIO_URL);
-
-      if (duration > 0 && !cancelled) {
-        setMainTrack({ ...mainTrack, duration, status: "ready" });
-      }
+    if (
+      mainTrack.fileName === BUNDLED_SAMPLE_AUDIO_FILE_NAME ||
+      mainTrack.objectUrl === BUNDLED_SAMPLE_AUDIO_URL
+    ) {
+      setMainTrack({ ...defaultMainTrack });
     }
-
-    loadBundledMainMetadata();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [mainTrack, setMainTrack]);
+  }, [mainTrack.fileName, mainTrack.objectUrl, setMainTrack]);
 
   useEffect(() => {
     let cancelled = false;
