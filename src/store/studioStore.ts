@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { mockSamples } from "@/data/mockSamples";
+import { defaultMainTrack, initialSamples } from "@/data/studioData";
 import { createStudioId } from "@/lib/id";
 import { clampBpm, snapTimeToBeat } from "@/lib/timeline/time";
 import type {
@@ -13,7 +13,7 @@ import type {
   StudioProjectState,
 } from "@/types/studio";
 
-export const STUDIO_STORAGE_KEY = "gangnam-remix-studio-project";
+export const STUDIO_STORAGE_KEY = "gangnam-remix-studio-op-only-project";
 
 type UploadedSampleInput = {
   id: string;
@@ -52,14 +52,9 @@ export function createInitialStudioState(): StudioProjectState {
     bpm: 132,
     speed: 1,
     snapToBeat: true,
-    mainTrack: {
-      fileName: null,
-      objectUrl: null,
-      duration: 0,
-      status: "empty",
-    },
-    clips: createInitialClips(),
-    samples: cloneSamples(mockSamples),
+    mainTrack: { ...defaultMainTrack },
+    clips: [],
+    samples: cloneSamples(initialSamples),
     selectedClipId: null,
     playheadTime: 0,
     isPlaying: false,
@@ -222,8 +217,8 @@ export const useStudioStore = create<StudioStore>()(
           ...currentState,
           ...restored,
           mainTrack: restoreMainTrack(restored.mainTrack),
-          samples: [...cloneSamples(mockSamples), ...uploadedSamples],
-          clips: restored.clips ?? currentState.clips,
+          samples: [...cloneSamples(initialSamples), ...uploadedSamples],
+          clips: filterUploadedClips(restored.clips ?? currentState.clips),
           selectedClipId: restored.selectedClipId ?? null,
           isPlaying: false,
           exportStatus: "idle",
@@ -233,59 +228,6 @@ export const useStudioStore = create<StudioStore>()(
     },
   ),
 );
-
-function createInitialClips(): StudioClip[] {
-  return [
-    {
-      id: "clip-mock-kick-fill",
-      name: "Kick Fill",
-      trackId: "drums",
-      sampleId: "mock-kick-fill",
-      sourceKind: "mock",
-      start: 1.8,
-      duration: 1.5,
-      volume: 0.88,
-      loop: false,
-      color: "#f59e0b",
-    },
-    {
-      id: "clip-mock-brass-stab",
-      name: "Brass Stab",
-      trackId: "brass",
-      sampleId: "mock-brass-stab",
-      sourceKind: "mock",
-      start: 5.45,
-      duration: 0.9,
-      volume: 0.82,
-      loop: false,
-      color: "#fb923c",
-    },
-    {
-      id: "clip-mock-synth-hit",
-      name: "Synth Hit",
-      trackId: "synth",
-      sampleId: "mock-synth-hit",
-      sourceKind: "mock",
-      start: 8.2,
-      duration: 0.8,
-      volume: 0.76,
-      loop: true,
-      color: "#60a5fa",
-    },
-    {
-      id: "clip-mock-crowd-shout",
-      name: "Crowd Shout",
-      trackId: "sfx",
-      sampleId: "mock-crowd-shout",
-      sourceKind: "mock",
-      start: 12.7,
-      duration: 1.8,
-      volume: 0.74,
-      loop: false,
-      color: "#e879f9",
-    },
-  ];
-}
 
 function cloneSamples(samples: SampleItem[]) {
   return samples.map((sample) => ({ ...sample }));
@@ -301,7 +243,11 @@ function sanitizeMainTrackForStorage(track: MainTrackState): MainTrackState {
 
 function restoreMainTrack(track?: MainTrackState): MainTrackState {
   if (!track) {
-    return createInitialStudioState().mainTrack;
+    return { ...defaultMainTrack };
+  }
+
+  if (!track.fileName || track.fileName === defaultMainTrack.fileName) {
+    return { ...defaultMainTrack, duration: track.duration || 0 };
   }
 
   return {
@@ -309,6 +255,10 @@ function restoreMainTrack(track?: MainTrackState): MainTrackState {
     objectUrl: null,
     status: track.fileName ? "stale" : "empty",
   };
+}
+
+function filterUploadedClips(clips: StudioClip[]) {
+  return clips.filter((clip) => clip.sourceKind === "uploaded");
 }
 
 function sanitizeSampleForStorage(sample: SampleItem): SampleItem {

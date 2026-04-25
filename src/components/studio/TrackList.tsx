@@ -3,7 +3,7 @@
 import { Music, Upload } from "lucide-react";
 import { useState } from "react";
 
-import { trackDefinitions } from "@/data/mockSamples";
+import { trackDefinitions } from "@/data/studioData";
 import { MAIN_AUDIO_ASSET_ID, registerAudioAsset } from "@/lib/audio/assets";
 import {
   createAudioObjectUrl,

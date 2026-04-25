@@ -15,7 +15,7 @@ export function MainWaveform({ className }: MainWaveformProps) {
   const waveSurferRef = useRef<WaveSurfer | null>(null);
   const mainTrack = useStudioStore((state) => state.mainTrack);
   const setMainTrack = useStudioStore((state) => state.setMainTrack);
-  const placeholderBars = useMemo(
+  const waveformBars = useMemo(
     () =>
       Array.from({ length: 96 }, (_, index) => {
         const level =
@@ -82,7 +82,7 @@ export function MainWaveform({ className }: MainWaveformProps) {
         <div ref={containerRef} className="h-full w-full px-2 py-2" />
       ) : (
         <div className="flex h-full items-center gap-px px-3">
-          {placeholderBars.map((height, index) => (
+          {waveformBars.map((height, index) => (
             <span
               key={`${height}-${index}`}
               className="w-1 flex-1 rounded-sm bg-zinc-600/60"
