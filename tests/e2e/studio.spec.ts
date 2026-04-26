@@ -8,6 +8,8 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("Upload Main", { exact: true })).toBeVisible();
   await expect(page.getByText("Upload SFX / Stem")).toBeVisible();
+  await expect(page.getByText("op.mp3", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Only op\.mp3 is loaded/)).toBeVisible();
 
   await page.getByLabel("Upload main music").setInputFiles({
     name: "test-main.wav",
@@ -22,8 +24,13 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
     .not.toBe("0:00.00");
   await page.getByRole("button", { name: "Stop" }).click();
 
-  await page.getByLabel("Add Kick Fill to timeline").click();
-  await expect(page.getByTestId("clip-inspector")).toContainText("Kick Fill");
+  await page.getByLabel("Upload effect sounds").setInputFiles({
+    name: "test-sfx.wav",
+    mimeType: "audio/wav",
+    buffer: createTestWav(),
+  });
+  await page.getByLabel("Add test-sfx to timeline").click();
+  await expect(page.getByTestId("clip-inspector")).toContainText("test-sfx");
 
   await page.getByLabel("BPM").fill("128");
   await expect(page.getByLabel("BPM")).toHaveValue("128");
@@ -36,7 +43,7 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
 
   await expect(page.getByLabel("BPM")).toHaveValue("128");
   await expect(page.getByLabel("Speed")).toHaveValue("1.25");
-  await expect(page.getByText("Kick Fill").first()).toBeVisible();
+  await expect(page.getByText("test-sfx").first()).toBeVisible();
   await expect(page.getByText("test-main.wav")).toBeVisible();
 
   await page.getByTestId("timeline-clip").last().click();

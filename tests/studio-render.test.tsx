@@ -20,8 +20,7 @@ describe("StudioShell", () => {
     expect(screen.getByTestId("sample-library")).toBeInTheDocument();
     expect(screen.getByLabelText("Upload main music")).toBeInTheDocument();
     expect(screen.getByLabelText("Upload effect sounds")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Add Kick Fill to timeline" }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("op.mp3")).toBeInTheDocument();
+    expect(screen.getByText(/Only op\.mp3 is loaded/)).toBeInTheDocument();
   });
 });

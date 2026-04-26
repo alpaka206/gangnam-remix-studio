@@ -69,7 +69,8 @@ export function SampleLibrary() {
             Sample Library
           </p>
           <p className="text-xs text-zinc-500">
-            Mock effects now, real files can live under /public/audio later.
+            No bundled sample data. Upload SFX or stems when you need extra
+            clips.
           </p>
         </div>
         <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-100 transition hover:border-amber-300">
@@ -92,6 +93,11 @@ export function SampleLibrary() {
       ) : null}
 
       <div className="flex gap-3 overflow-x-auto px-4 py-4">
+        {samples.length === 0 ? (
+          <div className="flex min-h-24 min-w-72 items-center rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-4 text-sm text-zinc-500">
+            Only op.mp3 is loaded. Upload an SFX or stem file to add clips.
+          </div>
+        ) : null}
         {samples.map((sample) => (
           <button
             key={sample.id}
@@ -117,7 +123,7 @@ export function SampleLibrary() {
               </span>
             </span>
             <span className="mt-2 text-xs text-zinc-500">
-              {sample.kind === "mock" ? "placeholder" : sample.fileName}
+              {sample.fileName}
             </span>
           </button>
         ))}

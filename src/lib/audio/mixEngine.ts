@@ -1,5 +1,4 @@
 import { MAIN_AUDIO_ASSET_ID, getAudioAssetFile } from "@/lib/audio/assets";
-import { createMockSampleBuffer } from "@/lib/audio/mockBuffers";
 import type {
   MainTrackState,
   SampleItem,
@@ -81,6 +80,10 @@ export async function scheduleMix({
   const now = context.currentTime;
 
   const mainBuffer = await resolveMainBuffer(context, mix.mainTrack);
+  const effectiveTimelineEnd =
+    mix.mainTrack.duration > 0
+      ? timelineEnd
+      : Math.max(timelineEnd, mainBuffer?.duration ?? 0);
 
   if (mainBuffer && startTime < mainBuffer.duration) {
     const mainSource = createSourceNode({
@@ -91,7 +94,7 @@ export async function scheduleMix({
       playbackRate: speed,
     });
     const remainingTimelineDuration = Math.min(
-      timelineEnd - startTime,
+      effectiveTimelineEnd - startTime,
       mainBuffer.duration - startTime,
     );
 
@@ -103,7 +106,7 @@ export async function scheduleMix({
   for (const clip of mix.clips) {
     const clipEnd = clip.start + clip.duration;
 
-    if (clipEnd <= startTime || clip.start >= timelineEnd) {
+    if (clipEnd <= startTime || clip.start >= effectiveTimelineEnd) {
       continue;
     }
 
@@ -118,7 +121,10 @@ export async function scheduleMix({
     const playedTimelineOffset = Math.max(0, startTime - clip.start);
     const timelineDuration = Math.max(
       0,
-      Math.min(clip.duration - playedTimelineOffset, timelineEnd - clip.start),
+      Math.min(
+        clip.duration - playedTimelineOffset,
+        effectiveTimelineEnd - clip.start,
+      ),
     );
 
     if (timelineDuration <= 0) {
@@ -163,11 +169,15 @@ async function resolveMainBuffer(
 ) {
   const file = await getAudioAssetFile(MAIN_AUDIO_ASSET_ID);
 
-  if (!file || !mainTrack.fileName) {
+  if (file) {
+    return decodeFile(context, file);
+  }
+
+  if (!mainTrack.objectUrl || !mainTrack.fileName) {
     return null;
   }
 
-  return decodeFile(context, file);
+  return decodeUrl(context, mainTrack.objectUrl);
 }
 
 async function resolveClipBuffer(
@@ -175,13 +185,6 @@ async function resolveClipBuffer(
   clip: StudioClip,
   sample?: SampleItem,
 ) {
-  if (clip.sourceKind === "mock") {
-    return createMockSampleBuffer(context, {
-      sampleId: clip.sampleId ?? clip.id,
-      duration: clip.duration,
-    });
-  }
-
   if (!sample) {
     return null;
   }
@@ -197,6 +200,17 @@ async function resolveClipBuffer(
 
 async function decodeFile(context: BaseAudioContext, file: File) {
   const arrayBuffer = await file.arrayBuffer();
+  return context.decodeAudioData(arrayBuffer.slice(0));
+}
+
+async function decodeUrl(context: BaseAudioContext, url: string) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
   return context.decodeAudioData(arrayBuffer.slice(0));
 }
 

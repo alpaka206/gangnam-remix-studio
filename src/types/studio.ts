@@ -2,7 +2,7 @@ export type TrackId = "main" | "drums" | "bass" | "synth" | "brass" | "sfx";
 
 export type PlaybackSpeed = 0.75 | 1 | 1.25 | 1.5;
 
-export type SampleKind = "mock" | "uploaded";
+export type SampleKind = "uploaded";
 
 export type ExportStatus = "idle" | "rendering" | "ready" | "error";
 

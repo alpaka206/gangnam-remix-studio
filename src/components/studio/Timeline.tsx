@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { MainWaveform } from "@/components/studio/MainWaveform";
-import { trackDefinitions } from "@/data/mockSamples";
+import { trackDefinitions } from "@/data/studioData";
 import { cn } from "@/lib/cn";
 import {
   DEFAULT_PIXELS_PER_SECOND,
@@ -82,8 +82,8 @@ export function Timeline() {
             </p>
           </div>
           <p className="text-xs text-zinc-500">
-            Drag clips on the beat grid. Uploaded audio, mock hits, and export
-            use the same mix engine.
+            op.mp3 is the only bundled audio. Uploaded clips and export use the
+            same mix engine.
           </p>
         </div>
 

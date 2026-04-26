@@ -1,3 +1,4 @@
+import { MAIN_AUDIO_ASSET_ID, getAudioAssetFile } from "@/lib/audio/assets";
 import {
   getMixTimelineEnd,
   scheduleMix,
@@ -9,7 +10,10 @@ const EXPORT_SAMPLE_RATE = 44_100;
 const EXPORT_TAIL_SECONDS = 0.35;
 
 export async function renderMixToWav(mix: MixRenderData) {
-  const timelineEnd = getMixTimelineEnd(mix) + EXPORT_TAIL_SECONDS;
+  const mainDuration =
+    mix.mainTrack.duration || (await resolveMainTrackDuration(mix.mainTrack));
+  const timelineEnd =
+    Math.max(getMixTimelineEnd(mix), mainDuration) + EXPORT_TAIL_SECONDS;
   const renderDuration = timelineEnd / Math.max(0.1, mix.speed);
   const frameCount = Math.ceil(renderDuration * EXPORT_SAMPLE_RATE);
   const context = new OfflineAudioContext(
@@ -28,6 +32,34 @@ export async function renderMixToWav(mix: MixRenderData) {
 
   const renderedBuffer = await context.startRendering();
   return encodeAudioBufferToWav(renderedBuffer);
+}
+
+async function resolveMainTrackDuration(mainTrack: MixRenderData["mainTrack"]) {
+  const file = await getAudioAssetFile(MAIN_AUDIO_ASSET_ID);
+  const arrayBuffer = file
+    ? await file.arrayBuffer()
+    : mainTrack.objectUrl
+      ? await fetchAudioArrayBuffer(mainTrack.objectUrl)
+      : null;
+
+  if (!arrayBuffer) {
+    return 0;
+  }
+
+  const context = new OfflineAudioContext(1, 1, EXPORT_SAMPLE_RATE);
+  const decoded = await context.decodeAudioData(arrayBuffer.slice(0));
+
+  return decoded.duration;
+}
+
+async function fetchAudioArrayBuffer(url: string) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return response.arrayBuffer();
 }
 
 export function downloadBlob(blob: Blob, fileName: string) {

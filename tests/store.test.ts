@@ -8,8 +8,19 @@ describe("studio store", () => {
     useStudioStore.getState().resetProject();
   });
 
+  it("starts with op.mp3 and no bundled sample data", () => {
+    const state = useStudioStore.getState();
+
+    expect(state.mainTrack.fileName).toBe("op.mp3");
+    expect(state.mainTrack.objectUrl).toBe("/op.mp3");
+    expect(state.samples).toHaveLength(0);
+    expect(state.clips).toHaveLength(0);
+  });
+
   it("adds a sample clip and selects it", () => {
-    const clipId = useStudioStore.getState().addSampleClip("mock-impact");
+    addUploadedSample();
+
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-sfx");
     const state = useStudioStore.getState();
 
     expect(clipId).toBeTruthy();
@@ -18,7 +29,9 @@ describe("studio store", () => {
   });
 
   it("moves, updates, and deletes clips", () => {
-    const clipId = useStudioStore.getState().addSampleClip("mock-clap-hit");
+    addUploadedSample();
+
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-sfx");
 
     expect(clipId).toBeTruthy();
 
@@ -41,7 +54,9 @@ describe("studio store", () => {
   });
 
   it("persists bpm, speed, and clips in localStorage", () => {
-    const clipId = useStudioStore.getState().addSampleClip("mock-sweep-up");
+    addUploadedSample();
+
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-sfx");
 
     useStudioStore.getState().setBpm(128);
     useStudioStore.getState().setSpeed(1.25);
@@ -54,3 +69,15 @@ describe("studio store", () => {
     expect(stored).toContain(clipId ?? "");
   });
 });
+
+function addUploadedSample() {
+  useStudioStore.getState().addUploadedSamples([
+    {
+      id: "uploaded-sfx",
+      name: "Uploaded SFX",
+      fileName: "uploaded-sfx.wav",
+      duration: 1,
+      objectUrl: "blob:test",
+    },
+  ]);
+}
