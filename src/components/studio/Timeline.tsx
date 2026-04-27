@@ -1,9 +1,12 @@
 "use client";
 
 import {
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
   type PointerEventHandler,
 } from "react";
 
@@ -18,7 +21,7 @@ import {
   secondsToPixels,
 } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
-import type { StudioClip } from "@/types/studio";
+import type { ClipTrackId, StudioClip } from "@/types/studio";
 
 type DragState = {
   clipId: string;
@@ -26,15 +29,29 @@ type DragState = {
   initialStart: number;
 };
 
+type TimelineClipboard =
+  | { kind: "clip"; clipId: string; duration: number }
+  | { kind: "sample"; sampleId: string; duration: number };
+
 export function Timeline() {
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const lastPointerTimeRef = useRef<number | null>(null);
+  const clipboardRef = useRef<TimelineClipboard | null>(null);
+  const nextPasteTimeRef = useRef<number | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const bpm = useStudioStore((state) => state.bpm);
   const clips = useStudioStore((state) => state.clips);
+  const samples = useStudioStore((state) => state.samples);
   const selectedClipId = useStudioStore((state) => state.selectedClipId);
+  const selectedSampleId = useStudioStore((state) => state.selectedSampleId);
+  const targetTrackId = useStudioStore((state) => state.targetTrackId);
   const playheadTime = useStudioStore((state) => state.playheadTime);
   const mainTrack = useStudioStore((state) => state.mainTrack);
   const selectClip = useStudioStore((state) => state.selectClip);
   const moveClip = useStudioStore((state) => state.moveClip);
+  const addSampleClip = useStudioStore((state) => state.addSampleClip);
+  const duplicateClip = useStudioStore((state) => state.duplicateClip);
+  const setTargetTrack = useStudioStore((state) => state.setTargetTrack);
 
   const timelineDuration = useMemo(
     () =>
@@ -69,6 +86,101 @@ export function Timeline() {
     };
   }, [bpm, timelineWidth]);
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const isShortcut = event.ctrlKey || event.metaKey;
+
+      if (!isShortcut) {
+        return;
+      }
+
+      if (event.key.toLowerCase() === "c") {
+        const selectedClip = clips.find((clip) => clip.id === selectedClipId);
+
+        if (selectedClip) {
+          clipboardRef.current = {
+            kind: "clip",
+            clipId: selectedClip.id,
+            duration: selectedClip.duration,
+          };
+          nextPasteTimeRef.current = null;
+          event.preventDefault();
+          return;
+        }
+
+        const selectedSample = samples.find(
+          (sample) => sample.id === selectedSampleId,
+        );
+
+        if (selectedSample) {
+          clipboardRef.current = {
+            kind: "sample",
+            sampleId: selectedSample.id,
+            duration: Math.max(
+              0.25,
+              selectedSample.duration || mainTrack.duration || 1,
+            ),
+          };
+          nextPasteTimeRef.current = null;
+          event.preventDefault();
+        }
+      }
+
+      if (event.key.toLowerCase() === "v") {
+        const clipboard = clipboardRef.current;
+
+        if (!clipboard) {
+          return;
+        }
+
+        const start =
+          nextPasteTimeRef.current ??
+          lastPointerTimeRef.current ??
+          playheadTime;
+        const clipId =
+          clipboard.kind === "clip"
+            ? duplicateClip(clipboard.clipId, { start, trackId: targetTrackId })
+            : addSampleClip(clipboard.sampleId, {
+                start,
+                trackId: targetTrackId,
+              });
+
+        if (clipId) {
+          nextPasteTimeRef.current = start + clipboard.duration;
+          event.preventDefault();
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    addSampleClip,
+    clips,
+    duplicateClip,
+    mainTrack.duration,
+    playheadTime,
+    samples,
+    selectedClipId,
+    selectedSampleId,
+    targetTrackId,
+  ]);
+
+  function updatePointerTime(event: ReactPointerEvent<HTMLDivElement>) {
+    const timeline = timelineRef.current;
+
+    if (!timeline) {
+      return;
+    }
+
+    const rect = timeline.getBoundingClientRect();
+    const x = event.clientX - rect.left + timeline.scrollLeft;
+    lastPointerTimeRef.current = Math.max(0, x / DEFAULT_PIXELS_PER_SECOND);
+  }
+
   return (
     <section className="relative min-h-0 overflow-hidden bg-[#111315]">
       <div className="flex h-full min-h-0 flex-col">
@@ -88,9 +200,12 @@ export function Timeline() {
         </div>
 
         <div
+          ref={timelineRef}
           className="min-h-0 flex-1 overflow-auto"
           data-testid="timeline"
+          onPointerMove={updatePointerTime}
           onPointerDown={(event) => {
+            updatePointerTime(event);
             if (event.target === event.currentTarget) {
               selectClip(null);
             }
@@ -112,6 +227,7 @@ export function Timeline() {
                   key={track.id}
                   className="relative h-16 border-b border-zinc-800 bg-zinc-950"
                   style={rowGridStyle}
+                  onPointerMove={() => setTargetTrack(track.id as ClipTrackId)}
                 >
                   {clips
                     .filter((clip) => clip.trackId === track.id)

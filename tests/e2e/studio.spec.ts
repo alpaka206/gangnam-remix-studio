@@ -8,8 +8,18 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("Upload Main", { exact: true })).toBeVisible();
   await expect(page.getByText("Upload SFX / Stem")).toBeVisible();
-  await expect(page.getByText("op.mp3", { exact: true })).toBeVisible();
-  await expect(page.getByText(/Only op\.mp3 is loaded/)).toBeVisible();
+  await expect(page.getByLabel("Add op from left sources")).toBeVisible();
+
+  await page.getByLabel("Add op from left sources").click();
+  await expect(page.getByTestId("clip-inspector")).toContainText("op");
+
+  const timelineBox = await page.getByTestId("timeline").boundingBox();
+  expect(timelineBox).toBeTruthy();
+  await page.mouse.move(timelineBox!.x + 260, timelineBox!.y + 170);
+  await page.keyboard.press("Control+C");
+  await page.keyboard.press("Control+V");
+  await page.keyboard.press("Control+V");
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(3);
 
   await page.getByLabel("Upload main music").setInputFiles({
     name: "test-main.wav",
@@ -31,6 +41,7 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   });
   await page.getByLabel("Add test-sfx to timeline").click();
   await expect(page.getByTestId("clip-inspector")).toContainText("test-sfx");
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(4);
 
   await page.getByLabel("BPM").fill("128");
   await expect(page.getByLabel("BPM")).toHaveValue("128");
