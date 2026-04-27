@@ -112,13 +112,34 @@ export const useStudioStore = create<StudioStore>()(
           ),
         })),
       updateSampleDuration: (sampleId, duration) =>
-        set((state) => ({
-          samples: state.samples.map((sample) =>
-            sample.id === sampleId
-              ? { ...sample, duration: Math.max(0, duration) }
-              : sample,
-          ),
-        })),
+        set((state) => {
+          const previousSample = state.samples.find(
+            (sample) => sample.id === sampleId,
+          );
+          const previousDuration = previousSample?.duration ?? 0;
+          const nextDuration = Math.max(0, duration);
+
+          return {
+            samples: state.samples.map((sample) =>
+              sample.id === sampleId
+                ? { ...sample, duration: nextDuration }
+                : sample,
+            ),
+            clips: state.clips.map((clip) => {
+              if (clip.sampleId !== sampleId || nextDuration <= 0) {
+                return clip;
+              }
+
+              const shouldFollowSourceDuration =
+                previousDuration <= 0 ||
+                Math.abs(clip.duration - previousDuration) < 0.01;
+
+              return shouldFollowSourceDuration
+                ? { ...clip, duration: Math.max(0.25, nextDuration) }
+                : clip;
+            }),
+          };
+        }),
       selectSample: (sampleId) =>
         set({ selectedSampleId: sampleId, selectedClipId: null }),
       addSampleClip: (sampleId, options) => {
@@ -134,10 +155,7 @@ export const useStudioStore = create<StudioStore>()(
           state.bpm,
           options?.snap ?? state.snapToBeat,
         );
-        const duration = Math.max(
-          0.25,
-          sample.duration || state.mainTrack.duration || 1,
-        );
+        const duration = Math.max(0.25, sample.duration || 1);
         const clip: StudioClip = {
           id: createId("clip"),
           name: sample.name,

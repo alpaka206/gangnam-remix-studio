@@ -149,10 +149,7 @@ export function Timeline() {
           clipboardRef.current = {
             kind: "sample",
             sampleId: selectedSample.id,
-            duration: Math.max(
-              0.25,
-              selectedSample.duration || mainTrack.duration || 1,
-            ),
+            duration: Math.max(0.25, selectedSample.duration || 1),
           };
           nextPasteTimeRef.current = null;
           event.preventDefault();

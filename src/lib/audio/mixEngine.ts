@@ -127,24 +127,63 @@ export async function scheduleMix({
       continue;
     }
 
+    const clipPlaybackTiming = getClipPlaybackTiming({
+      bufferDuration: buffer.duration,
+      clipDuration: clip.duration,
+      isLooping: clip.loop,
+      playedTimelineOffset,
+      speed,
+    });
     const source = createSourceNode({
       context,
       destination,
       buffer,
       gainValue: clip.volume * trackGain[clip.trackId],
-      playbackRate: speed,
+      playbackRate: clipPlaybackTiming.playbackRate,
     });
-    const sourceOffset = clip.loop
-      ? playedTimelineOffset % Math.max(0.01, buffer.duration)
-      : Math.min(playedTimelineOffset, Math.max(0, buffer.duration - 0.01));
 
     source.loop = clip.loop;
-    source.start(now + delay, sourceOffset);
+    source.start(now + delay, clipPlaybackTiming.sourceOffset);
     source.stop(now + delay + timelineDuration / speed);
     nodes.push(source);
   }
 
   return nodes;
+}
+
+export function getClipPlaybackTiming({
+  bufferDuration,
+  clipDuration,
+  isLooping,
+  playedTimelineOffset,
+  speed,
+}: {
+  bufferDuration: number;
+  clipDuration: number;
+  isLooping: boolean;
+  playedTimelineOffset: number;
+  speed: number;
+}) {
+  const safeSpeed = Math.max(0.1, speed);
+  const safeBufferDuration = Math.max(0.01, bufferDuration);
+
+  if (isLooping) {
+    return {
+      playbackRate: safeSpeed,
+      sourceOffset: Math.max(0, playedTimelineOffset) % safeBufferDuration,
+    };
+  }
+
+  const safeClipDuration = Math.max(0.01, clipDuration);
+  const clipFitRate = safeBufferDuration / safeClipDuration;
+
+  return {
+    playbackRate: safeSpeed * clipFitRate,
+    sourceOffset: Math.min(
+      Math.max(0, playedTimelineOffset) * clipFitRate,
+      Math.max(0, safeBufferDuration - 0.01),
+    ),
+  };
 }
 
 export function getMixTimelineEnd(

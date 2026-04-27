@@ -54,6 +54,49 @@ describe("studio store", () => {
     ]);
   });
 
+  it("does not use the main music length as a fallback for sound blocks", () => {
+    useStudioStore.getState().setMainTrack({
+      fileName: "main.wav",
+      objectUrl: "blob:main",
+      duration: 60,
+      status: "ready",
+    });
+
+    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
+    const clip = useStudioStore
+      .getState()
+      .clips.find((item) => item.id === clipId);
+
+    expect(clip?.duration).toBe(1);
+  });
+
+  it("resizes existing sound blocks when late audio duration metadata arrives", () => {
+    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
+
+    useStudioStore.getState().updateSampleDuration("bundled-op", 4.2);
+
+    const clip = useStudioStore
+      .getState()
+      .clips.find((item) => item.id === clipId);
+
+    expect(clip?.duration).toBe(4.2);
+  });
+
+  it("keeps manually resized sound blocks when source metadata changes", () => {
+    addUploadedSample();
+
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-meme");
+
+    useStudioStore.getState().updateClip(clipId!, { duration: 3.5 });
+    useStudioStore.getState().updateSampleDuration("uploaded-meme", 2);
+
+    const clip = useStudioStore
+      .getState()
+      .clips.find((item) => item.id === clipId);
+
+    expect(clip?.duration).toBe(3.5);
+  });
+
   it("adds a sample clip and selects it", () => {
     addUploadedSample();
 
