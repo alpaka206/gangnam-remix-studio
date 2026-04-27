@@ -50,9 +50,7 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   const download = await downloadPromise;
 
   expect(download.suggestedFilename()).toMatch(/gangnam-remix-.*\.wav/);
-  await expect(page.getByTestId("export-status")).toContainText(
-    "export ready",
-  );
+  await expect(page.getByTestId("export-status")).toContainText("export ready");
 });
 
 test("studio remains usable on a mobile viewport", async ({ page }) => {

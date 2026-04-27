@@ -27,12 +27,5 @@ export function useMixExport() {
         error instanceof Error ? error.message : "Export failed unexpectedly.",
       );
     }
-  }, [
-    clips,
-    mainTrack,
-    samples,
-    setExportError,
-    setExportStatus,
-    speed,
-  ]);
+  }, [clips, mainTrack, samples, setExportError, setExportStatus, speed]);
 }

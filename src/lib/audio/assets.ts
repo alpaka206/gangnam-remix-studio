@@ -9,7 +9,11 @@ type RegisteredAudioAsset = {
 
 const audioAssets = new Map<string, RegisteredAudioAsset>();
 
-export function registerAudioAsset(assetId: string, file: File, objectUrl: string) {
+export function registerAudioAsset(
+  assetId: string,
+  file: File,
+  objectUrl: string,
+) {
   const previous = audioAssets.get(assetId);
 
   if (previous && previous.objectUrl !== objectUrl) {

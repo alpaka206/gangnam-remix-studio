@@ -145,7 +145,9 @@ export async function scheduleMix({
   return nodes;
 }
 
-export function getMixTimelineEnd(mix: Pick<MixRenderData, "clips" | "mainTrack">) {
+export function getMixTimelineEnd(
+  mix: Pick<MixRenderData, "clips" | "mainTrack">,
+) {
   const mainEnd = mix.mainTrack.duration;
   const clipEnd = Math.max(
     0,

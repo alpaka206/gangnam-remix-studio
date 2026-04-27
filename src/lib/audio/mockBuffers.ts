@@ -85,7 +85,8 @@ function fillTone(
   for (let index = 0; index < data.length; index += 1) {
     const time = index / sampleRate;
     const attack = Math.min(1, time / 0.025);
-    const envelope = attack * Math.exp(-time * (character === "brass" ? 2.8 : 4));
+    const envelope =
+      attack * Math.exp(-time * (character === "brass" ? 2.8 : 4));
     const vibrato = Math.sin(2 * Math.PI * 5.5 * time) * 2.5;
     const fundamental = frequency + vibrato;
     const harmonicA = Math.sin(2 * Math.PI * fundamental * time);

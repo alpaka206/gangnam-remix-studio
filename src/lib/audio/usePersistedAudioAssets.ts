@@ -10,7 +10,9 @@ export function usePersistedAudioAssets() {
   const mainTrack = useStudioStore((state) => state.mainTrack);
   const samples = useStudioStore((state) => state.samples);
   const setMainTrack = useStudioStore((state) => state.setMainTrack);
-  const restoreSampleAsset = useStudioStore((state) => state.restoreSampleAsset);
+  const restoreSampleAsset = useStudioStore(
+    (state) => state.restoreSampleAsset,
+  );
 
   useEffect(() => {
     let cancelled = false;
