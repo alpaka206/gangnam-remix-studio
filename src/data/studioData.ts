@@ -14,6 +14,8 @@ export const defaultMainTrack: MainTrackState = {
   status: "ready",
 };
 
+export const DEFAULT_BUNDLED_SAMPLE_ID = "bundled-op";
+
 export const trackDefinitions: TrackDefinition[] = [
   { id: "main", name: "Main Music", color: "#9ca3af" },
   { id: "drums", name: "Drums", color: "#f59e0b" },
@@ -23,4 +25,15 @@ export const trackDefinitions: TrackDefinition[] = [
   { id: "sfx", name: "SFX", color: "#e879f9" },
 ];
 
-export const initialSamples: SampleItem[] = [];
+export const initialSamples: SampleItem[] = [
+  {
+    id: DEFAULT_BUNDLED_SAMPLE_ID,
+    name: "op",
+    kind: "bundled",
+    trackId: "sfx",
+    duration: 0,
+    color: "#e879f9",
+    fileName: DEFAULT_MAIN_AUDIO_FILE_NAME,
+    objectUrl: DEFAULT_MAIN_AUDIO_URL,
+  },
+];

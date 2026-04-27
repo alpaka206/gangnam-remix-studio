@@ -8,13 +8,35 @@ describe("studio store", () => {
     useStudioStore.getState().resetProject();
   });
 
-  it("starts with op.mp3 and no bundled sample data", () => {
+  it("starts with op.mp3 as the only bundled audio source", () => {
     const state = useStudioStore.getState();
 
     expect(state.mainTrack.fileName).toBe("op.mp3");
     expect(state.mainTrack.objectUrl).toBe("/op.mp3");
-    expect(state.samples).toHaveLength(0);
+    expect(state.samples).toHaveLength(1);
+    expect(state.samples[0]).toMatchObject({
+      fileName: "op.mp3",
+      kind: "bundled",
+      objectUrl: "/op.mp3",
+    });
     expect(state.clips).toHaveLength(0);
+  });
+
+  it("can add the bundled op.mp3 source repeatedly", () => {
+    const firstClipId = useStudioStore.getState().addSampleClip("bundled-op");
+    const secondClipId = useStudioStore
+      .getState()
+      .addSampleClip("bundled-op", { start: 2 });
+
+    const state = useStudioStore.getState();
+
+    expect(firstClipId).toBeTruthy();
+    expect(secondClipId).toBeTruthy();
+    expect(state.clips).toHaveLength(2);
+    expect(state.clips.map((clip) => clip.sampleId)).toEqual([
+      "bundled-op",
+      "bundled-op",
+    ]);
   });
 
   it("adds a sample clip and selects it", () => {
@@ -67,6 +89,20 @@ describe("studio store", () => {
     expect(stored).toContain('"bpm":128');
     expect(stored).toContain('"speed":1.25');
     expect(stored).toContain(clipId ?? "");
+  });
+
+  it("duplicates a selected clip at a requested position", () => {
+    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
+    const duplicatedClipId = useStudioStore
+      .getState()
+      .duplicateClip(clipId!, { start: 3 });
+
+    const duplicatedClip = useStudioStore
+      .getState()
+      .clips.find((clip) => clip.id === duplicatedClipId);
+
+    expect(duplicatedClip?.sampleId).toBe("bundled-op");
+    expect(duplicatedClip?.start).toBeGreaterThanOrEqual(0);
   });
 });
 

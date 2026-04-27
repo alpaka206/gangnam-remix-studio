@@ -192,7 +192,7 @@ async function resolveClipBuffer(
   const file = await getAudioAssetFile(sample.id);
 
   if (!file) {
-    return null;
+    return sample.objectUrl ? decodeUrl(context, sample.objectUrl) : null;
   }
 
   return decodeFile(context, file);

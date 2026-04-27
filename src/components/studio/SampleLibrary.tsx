@@ -17,9 +17,11 @@ import { useStudioStore } from "@/store/studioStore";
 export function SampleLibrary() {
   const [error, setError] = useState<string | null>(null);
   const samples = useStudioStore((state) => state.samples);
+  const selectedSampleId = useStudioStore((state) => state.selectedSampleId);
   const addUploadedSamples = useStudioStore(
     (state) => state.addUploadedSamples,
   );
+  const selectSample = useStudioStore((state) => state.selectSample);
   const addSampleClip = useStudioStore((state) => state.addSampleClip);
 
   async function handleSampleUpload(fileList: FileList | null) {
@@ -102,10 +104,17 @@ export function SampleLibrary() {
           <button
             key={sample.id}
             type="button"
-            className="flex min-w-44 flex-col rounded-md border border-zinc-800 bg-zinc-900 px-3 py-3 text-left transition hover:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300/40"
+            className={`flex min-w-44 flex-col rounded-md border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-amber-300/40 ${
+              selectedSampleId === sample.id
+                ? "border-amber-300 bg-amber-300/10"
+                : "border-zinc-800 bg-zinc-900 hover:border-amber-300"
+            }`}
             data-testid="sample-item"
             aria-label={`Add ${sample.name} to timeline`}
-            onClick={() => addSampleClip(sample.id)}
+            onClick={() => {
+              selectSample(sample.id);
+              addSampleClip(sample.id);
+            }}
           >
             <span className="flex items-center justify-between gap-3">
               <span className="truncate text-sm font-semibold text-zinc-100">

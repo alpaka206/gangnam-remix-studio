@@ -14,11 +14,18 @@ import { savePersistentAudioAsset } from "@/lib/audio/persistentAssets";
 import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
+import type { ClipTrackId } from "@/types/studio";
 
 export function TrackList() {
   const [error, setError] = useState<string | null>(null);
   const mainTrack = useStudioStore((state) => state.mainTrack);
+  const samples = useStudioStore((state) => state.samples);
+  const selectedSampleId = useStudioStore((state) => state.selectedSampleId);
+  const targetTrackId = useStudioStore((state) => state.targetTrackId);
   const setMainTrack = useStudioStore((state) => state.setMainTrack);
+  const setTargetTrack = useStudioStore((state) => state.setTargetTrack);
+  const selectSample = useStudioStore((state) => state.selectSample);
+  const addSampleClip = useStudioStore((state) => state.addSampleClip);
 
   async function handleMainUpload(file: File | undefined) {
     if (!file) {
@@ -78,14 +85,69 @@ export function TrackList() {
         {error ? <p className="mt-2 text-xs text-rose-300">{error}</p> : null}
       </div>
 
+      <div className="border-b border-zinc-800 px-3 py-3">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase text-zinc-500">
+            Audio Sources
+          </p>
+          <p className="font-mono text-[11px] text-zinc-600">
+            to {targetTrackId.toUpperCase()}
+          </p>
+        </div>
+        <div className="space-y-1">
+          {samples.map((sample) => (
+            <button
+              key={sample.id}
+              type="button"
+              className={cn(
+                "flex w-full items-center justify-between gap-2 rounded-md border px-2 py-2 text-left text-sm transition",
+                selectedSampleId === sample.id
+                  ? "border-amber-300 bg-amber-300/10 text-amber-100"
+                  : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-zinc-600",
+              )}
+              data-testid="left-audio-source"
+              aria-label={`Add ${sample.name} from left sources`}
+              onClick={() => {
+                selectSample(sample.id);
+                addSampleClip(sample.id);
+              }}
+            >
+              <span className="min-w-0">
+                <span className="block truncate font-medium">
+                  {sample.fileName ?? sample.name}
+                </span>
+                <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">
+                  {sample.duration > 0 ? formatTime(sample.duration) : "audio"}
+                </span>
+              </span>
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                style={{ backgroundColor: sample.color }}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto py-2">
         {trackDefinitions.map((track) => (
-          <div
+          <button
             key={track.id}
+            type="button"
+            disabled={track.id === "main"}
             className={cn(
-              "mx-2 mb-1 flex h-12 items-center gap-3 rounded-md border border-transparent px-3 text-sm text-zinc-200",
-              track.id === "main" ? "bg-zinc-900" : "bg-zinc-950",
+              "mx-2 mb-1 flex h-12 w-[calc(100%-1rem)] items-center gap-3 rounded-md border px-3 text-left text-sm transition",
+              track.id === "main"
+                ? "cursor-default border-transparent bg-zinc-900 text-zinc-400"
+                : targetTrackId === track.id
+                  ? "border-amber-300/70 bg-zinc-900 text-zinc-50"
+                  : "border-transparent bg-zinc-950 text-zinc-200 hover:border-zinc-700",
             )}
+            onClick={() => {
+              if (track.id !== "main") {
+                setTargetTrack(track.id as ClipTrackId);
+              }
+            }}
           >
             <span
               className="h-3 w-3 rounded-sm"
@@ -93,7 +155,7 @@ export function TrackList() {
             />
             <Music size={15} className="text-zinc-500" />
             <span>{track.name}</span>
-          </div>
+          </button>
         ))}
       </div>
     </aside>

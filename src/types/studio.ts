@@ -1,8 +1,10 @@
 export type TrackId = "main" | "drums" | "bass" | "synth" | "brass" | "sfx";
 
+export type ClipTrackId = Exclude<TrackId, "main">;
+
 export type PlaybackSpeed = 0.75 | 1 | 1.25 | 1.5;
 
-export type SampleKind = "uploaded";
+export type SampleKind = "bundled" | "uploaded";
 
 export type ExportStatus = "idle" | "rendering" | "ready" | "error";
 
@@ -23,7 +25,7 @@ export interface SampleItem {
   id: string;
   name: string;
   kind: SampleKind;
-  trackId: Exclude<TrackId, "main">;
+  trackId: ClipTrackId;
   duration: number;
   color: string;
   fileName?: string;
@@ -52,6 +54,8 @@ export interface StudioProjectState {
   clips: StudioClip[];
   samples: SampleItem[];
   selectedClipId: string | null;
+  selectedSampleId: string | null;
+  targetTrackId: ClipTrackId;
   playheadTime: number;
   isPlaying: boolean;
   exportStatus: ExportStatus;

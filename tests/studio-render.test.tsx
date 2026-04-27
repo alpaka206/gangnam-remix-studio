@@ -20,7 +20,12 @@ describe("StudioShell", () => {
     expect(screen.getByTestId("sample-library")).toBeInTheDocument();
     expect(screen.getByLabelText("Upload main music")).toBeInTheDocument();
     expect(screen.getByLabelText("Upload effect sounds")).toBeInTheDocument();
-    expect(screen.getByText("op.mp3")).toBeInTheDocument();
-    expect(screen.getByText(/Only op\.mp3 is loaded/)).toBeInTheDocument();
+    expect(screen.getAllByText("op.mp3").length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("button", { name: "Add op from left sources" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add op to timeline" }),
+    ).toBeInTheDocument();
   });
 });

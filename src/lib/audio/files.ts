@@ -52,6 +52,21 @@ export async function getAudioDuration(file: File) {
   return getMediaElementDuration(file);
 }
 
+export function getAudioUrlDuration(url: string) {
+  return new Promise<number>((resolve) => {
+    const audio = document.createElement("audio");
+
+    audio.preload = "metadata";
+    audio.src = url;
+    audio.onloadedmetadata = () => {
+      resolve(Number((audio.duration || 0).toFixed(2)));
+    };
+    audio.onerror = () => {
+      resolve(0);
+    };
+  });
+}
+
 function getMediaElementDuration(file: File) {
   return new Promise<number>((resolve) => {
     const audio = document.createElement("audio");

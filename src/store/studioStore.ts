@@ -5,6 +5,7 @@ import { defaultMainTrack, initialSamples } from "@/data/studioData";
 import { createStudioId } from "@/lib/id";
 import { clampBpm, snapTimeToBeat } from "@/lib/timeline/time";
 import type {
+  ClipTrackId,
   MainTrackState,
   PlaybackSpeed,
   ExportStatus,
@@ -30,7 +31,17 @@ type StudioActions = {
   setMainTrack: (track: MainTrackState) => void;
   addUploadedSamples: (samples: UploadedSampleInput[]) => void;
   restoreSampleAsset: (sampleId: string, objectUrl: string) => void;
-  addSampleClip: (sampleId: string) => string | null;
+  updateSampleDuration: (sampleId: string, duration: number) => void;
+  setTargetTrack: (trackId: ClipTrackId) => void;
+  selectSample: (sampleId: string | null) => void;
+  addSampleClip: (
+    sampleId: string,
+    options?: { start?: number; trackId?: ClipTrackId },
+  ) => string | null;
+  duplicateClip: (
+    clipId: string,
+    options?: { start?: number; trackId?: ClipTrackId },
+  ) => string | null;
   selectClip: (clipId: string | null) => void;
   moveClip: (clipId: string, start: number) => void;
   updateClip: (clipId: string, patch: Partial<StudioClip>) => void;
@@ -56,6 +67,8 @@ export function createInitialStudioState(): StudioProjectState {
     clips: [],
     samples: cloneSamples(initialSamples),
     selectedClipId: null,
+    selectedSampleId: null,
+    targetTrackId: "sfx",
     playheadTime: 0,
     isPlaying: false,
     exportStatus: "idle",
@@ -107,7 +120,18 @@ export const useStudioStore = create<StudioStore>()(
             sample.id === sampleId ? { ...sample, objectUrl } : sample,
           ),
         })),
-      addSampleClip: (sampleId) => {
+      updateSampleDuration: (sampleId, duration) =>
+        set((state) => ({
+          samples: state.samples.map((sample) =>
+            sample.id === sampleId
+              ? { ...sample, duration: Math.max(0, duration) }
+              : sample,
+          ),
+        })),
+      setTargetTrack: (trackId) => set({ targetTrackId: trackId }),
+      selectSample: (sampleId) =>
+        set({ selectedSampleId: sampleId, selectedClipId: null }),
+      addSampleClip: (sampleId, options) => {
         const state = get();
         const sample = state.samples.find((item) => item.id === sampleId);
 
@@ -116,18 +140,22 @@ export const useStudioStore = create<StudioStore>()(
         }
 
         const start = snapTimeToBeat(
-          state.playheadTime,
+          options?.start ?? state.playheadTime,
           state.bpm,
           state.snapToBeat,
+        );
+        const duration = Math.max(
+          0.25,
+          sample.duration || state.mainTrack.duration || 1,
         );
         const clip: StudioClip = {
           id: createId("clip"),
           name: sample.name,
-          trackId: sample.trackId,
+          trackId: options?.trackId ?? state.targetTrackId ?? sample.trackId,
           sampleId: sample.id,
           sourceKind: sample.kind,
           start,
-          duration: sample.duration,
+          duration,
           volume: 0.86,
           loop: false,
           color: sample.color,
@@ -137,11 +165,45 @@ export const useStudioStore = create<StudioStore>()(
         set((current) => ({
           clips: [...current.clips, clip],
           selectedClipId: clip.id,
+          selectedSampleId: sample.id,
         }));
 
         return clip.id;
       },
-      selectClip: (clipId) => set({ selectedClipId: clipId }),
+      duplicateClip: (clipId, options) => {
+        const state = get();
+        const sourceClip = state.clips.find((clip) => clip.id === clipId);
+
+        if (!sourceClip) {
+          return null;
+        }
+
+        const start = snapTimeToBeat(
+          options?.start ?? sourceClip.start + sourceClip.duration,
+          state.bpm,
+          state.snapToBeat,
+        );
+        const clip: StudioClip = {
+          ...sourceClip,
+          id: createId("clip"),
+          start,
+          trackId: options?.trackId ?? sourceClip.trackId,
+        };
+
+        set((current) => ({
+          clips: [...current.clips, clip],
+          selectedClipId: clip.id,
+          selectedSampleId: clip.sampleId ?? null,
+        }));
+
+        return clip.id;
+      },
+      selectClip: (clipId) =>
+        set((state) => ({
+          selectedClipId: clipId,
+          selectedSampleId:
+            state.clips.find((clip) => clip.id === clipId)?.sampleId ?? null,
+        })),
       moveClip: (clipId, start) =>
         set((state) => ({
           clips: state.clips.map((clip) =>
@@ -201,6 +263,8 @@ export const useStudioStore = create<StudioStore>()(
         clips: state.clips,
         samples: state.samples.map(sanitizeSampleForStorage),
         selectedClipId: state.selectedClipId,
+        selectedSampleId: state.selectedSampleId,
+        targetTrackId: state.targetTrackId,
         playheadTime: state.playheadTime,
         isPlaying: false,
         exportStatus: "idle",
@@ -220,6 +284,8 @@ export const useStudioStore = create<StudioStore>()(
           samples: [...cloneSamples(initialSamples), ...uploadedSamples],
           clips: filterUploadedClips(restored.clips ?? currentState.clips),
           selectedClipId: restored.selectedClipId ?? null,
+          selectedSampleId: restored.selectedSampleId ?? null,
+          targetTrackId: restored.targetTrackId ?? "sfx",
           isPlaying: false,
           exportStatus: "idle",
           exportError: null,
@@ -258,7 +324,9 @@ function restoreMainTrack(track?: MainTrackState): MainTrackState {
 }
 
 function filterUploadedClips(clips: StudioClip[]) {
-  return clips.filter((clip) => clip.sourceKind === "uploaded");
+  return clips.filter(
+    (clip) => clip.sourceKind === "uploaded" || clip.sourceKind === "bundled",
+  );
 }
 
 function sanitizeSampleForStorage(sample: SampleItem): SampleItem {
