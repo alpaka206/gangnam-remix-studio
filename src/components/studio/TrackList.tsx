@@ -4,6 +4,7 @@ import { Music, Upload } from "lucide-react";
 import { useState } from "react";
 
 import { trackDefinitions } from "@/data/mockSamples";
+import { MAIN_AUDIO_ASSET_ID, registerAudioAsset } from "@/lib/audio/assets";
 import {
   createAudioObjectUrl,
   getAudioDuration,
@@ -28,14 +29,11 @@ export function TrackList() {
       return;
     }
 
-    if (mainTrack.objectUrl) {
-      URL.revokeObjectURL(mainTrack.objectUrl);
-    }
-
     setError(null);
     const objectUrl = createAudioObjectUrl(file);
     const duration = await getAudioDuration(file);
 
+    registerAudioAsset(MAIN_AUDIO_ASSET_ID, file, objectUrl);
     setMainTrack({
       fileName: file.name,
       objectUrl,

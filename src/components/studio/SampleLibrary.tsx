@@ -3,11 +3,13 @@
 import { Plus, Upload } from "lucide-react";
 import { useState } from "react";
 
+import { registerAudioAsset } from "@/lib/audio/assets";
 import {
   createAudioObjectUrl,
   getAudioDuration,
   isSupportedAudioFile,
 } from "@/lib/audio/files";
+import { createStudioId } from "@/lib/id";
 import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
 
@@ -35,12 +37,20 @@ export function SampleLibrary() {
 
     setError(null);
     const uploadedSamples = await Promise.all(
-      files.map(async (file) => ({
-        name: file.name.replace(/\.[^/.]+$/, ""),
-        fileName: file.name,
-        duration: await getAudioDuration(file),
-        objectUrl: createAudioObjectUrl(file),
-      })),
+      files.map(async (file) => {
+        const id = createStudioId("uploaded-sample");
+        const objectUrl = createAudioObjectUrl(file);
+
+        registerAudioAsset(id, file, objectUrl);
+
+        return {
+          id,
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          fileName: file.name,
+          duration: await getAudioDuration(file),
+          objectUrl,
+        };
+      }),
     );
 
     addUploadedSamples(uploadedSamples);

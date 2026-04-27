@@ -1,19 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
+import {
+  getMixTimelineEnd,
+  scheduleMixPlayback,
+  type ScheduledMix,
+} from "@/lib/audio/mixEngine";
 import { useStudioStore } from "@/store/studioStore";
 
 export function useStudioPlayback() {
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const scheduledMixRef = useRef<ScheduledMix | null>(null);
   const frameRef = useRef<number | null>(null);
-  const simulationStartedAtRef = useRef<{
+  const playheadTimeRef = useRef(0);
+  const playbackStartedRef = useRef<{
     startedAt: number;
     startPlayhead: number;
+    timelineEnd: number;
   } | null>(null);
-  const playheadTimeRef = useRef(0);
 
   const mainTrack = useStudioStore((state) => state.mainTrack);
+  const clips = useStudioStore((state) => state.clips);
+  const samples = useStudioStore((state) => state.samples);
   const speed = useStudioStore((state) => state.speed);
   const isPlaying = useStudioStore((state) => state.isPlaying);
   const playheadTime = useStudioStore((state) => state.playheadTime);
@@ -24,135 +33,127 @@ export function useStudioPlayback() {
     playheadTimeRef.current = playheadTime;
   }, [playheadTime]);
 
-  useEffect(() => {
-    const audio = audioRef.current;
-
-    if (!audio) {
-      return;
+  const cancelAnimationFrameIfNeeded = useCallback(() => {
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
     }
+  }, []);
 
-    audio.playbackRate = speed;
-  }, [speed]);
+  const stopScheduledMix = useCallback(() => {
+    scheduledMixRef.current?.stop();
+    scheduledMixRef.current = null;
+    playbackStartedRef.current = null;
+    cancelAnimationFrameIfNeeded();
 
-  useEffect(() => {
-    const audio = audioRef.current;
+    const context = audioContextRef.current;
+    audioContextRef.current = null;
 
-    if (!audio) {
-      return;
+    if (context && context.state !== "closed") {
+      void context.close();
     }
+  }, [cancelAnimationFrameIfNeeded]);
 
-    const handleTimeUpdate = () => setPlayheadTime(audio.currentTime);
-    const handleEnded = () => setPlayback(false);
+  const startPlayheadLoop = useCallback(
+    (
+      playbackSpeed: number,
+      updatePlayhead: (time: number) => void,
+      updatePlayback: (playing: boolean) => void,
+    ) => {
+      cancelAnimationFrameIfNeeded();
 
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("ended", handleEnded);
+      const tick = () => {
+        const playback = playbackStartedRef.current;
 
-    return () => {
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, [setPlayback, setPlayheadTime]);
+        if (!playback) {
+          return;
+        }
 
-  useEffect(() => {
-    const audio = audioRef.current;
+        const elapsed =
+          playback.startPlayhead +
+          ((performance.now() - playback.startedAt) / 1000) * playbackSpeed;
+        const boundedElapsed = Math.min(elapsed, playback.timelineEnd);
 
-    if (!audio || !mainTrack.objectUrl) {
-      return;
-    }
+        updatePlayhead(boundedElapsed);
 
-    audio.src = mainTrack.objectUrl;
-    audio.currentTime = 0;
-  }, [mainTrack.objectUrl]);
+        if (boundedElapsed >= playback.timelineEnd) {
+          stopScheduledMix();
+          updatePlayback(false);
+          return;
+        }
 
-  useEffect(() => {
-    if (!isPlaying || mainTrack.objectUrl) {
-      cancelSimulation(frameRef);
-      simulationStartedAtRef.current = null;
-      return;
-    }
+        frameRef.current = requestAnimationFrame(tick);
+      };
 
-    simulationStartedAtRef.current = {
-      startedAt: performance.now(),
-      startPlayhead: playheadTimeRef.current,
-    };
-
-    const tick = () => {
-      const simulation = simulationStartedAtRef.current;
-
-      if (simulation === null) {
-        return;
-      }
-
-      const elapsed =
-        simulation.startPlayhead +
-        ((performance.now() - simulation.startedAt) / 1000) * speed;
-      setPlayheadTime(elapsed);
       frameRef.current = requestAnimationFrame(tick);
+    },
+    [cancelAnimationFrameIfNeeded, stopScheduledMix],
+  );
+
+  useEffect(() => {
+    return () => {
+      stopScheduledMix();
     };
-
-    frameRef.current = requestAnimationFrame(tick);
-
-    return () => cancelSimulation(frameRef);
-  }, [isPlaying, mainTrack.objectUrl, setPlayheadTime, speed]);
+  }, [stopScheduledMix]);
 
   const togglePlayback = useCallback(async () => {
-    const audio = audioRef.current;
-
     if (isPlaying) {
-      audio?.pause();
+      stopScheduledMix();
       setPlayback(false);
       return;
     }
 
-    if (!mainTrack.objectUrl || !audio) {
-      setPlayback(true);
+    const AudioContextClass =
+      window.AudioContext ??
+      (window as Window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+
+    if (!AudioContextClass) {
       return;
     }
 
-    try {
-      audio.playbackRate = speed;
-      audio.currentTime = Math.min(
-        playheadTime,
-        mainTrack.duration || playheadTime,
-      );
-      await audio.play();
-      setPlayback(true);
-    } catch {
-      setPlayback(false);
-    }
+    const context = new AudioContextClass();
+    audioContextRef.current = context;
+    await context.resume();
+
+    const startTime = playheadTimeRef.current;
+    const timelineEnd = getMixTimelineEnd({ clips, mainTrack });
+    const scheduledMix = await scheduleMixPlayback({
+      context,
+      destination: context.destination,
+      mix: { mainTrack, clips, samples, speed },
+      startTime,
+      timelineEnd,
+    });
+
+    scheduledMixRef.current = scheduledMix;
+    playbackStartedRef.current = {
+      startedAt: performance.now(),
+      startPlayhead: startTime,
+      timelineEnd,
+    };
+    setPlayback(true);
+    startPlayheadLoop(speed, setPlayheadTime, setPlayback);
   }, [
+    clips,
     isPlaying,
-    mainTrack.duration,
-    mainTrack.objectUrl,
-    playheadTime,
+    mainTrack,
+    samples,
     setPlayback,
+    setPlayheadTime,
     speed,
+    startPlayheadLoop,
+    stopScheduledMix,
   ]);
 
   const stopPlayback = useCallback(() => {
-    const audio = audioRef.current;
-
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
-    }
-
-    cancelSimulation(frameRef);
-    simulationStartedAtRef.current = null;
+    stopScheduledMix();
     setPlayheadTime(0);
     setPlayback(false);
-  }, [setPlayback, setPlayheadTime]);
+  }, [setPlayback, setPlayheadTime, stopScheduledMix]);
 
   return {
-    audioRef,
     togglePlayback,
     stopPlayback,
   };
-}
-
-function cancelSimulation(frameRef: MutableRefObject<number | null>) {
-  if (frameRef.current !== null) {
-    cancelAnimationFrame(frameRef.current);
-    frameRef.current = null;
-  }
 }

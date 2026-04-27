@@ -8,7 +8,7 @@ import { TransportBar } from "@/components/studio/TransportBar";
 import { useStudioPlayback } from "@/lib/audio/useStudioPlayback";
 
 export function StudioShell() {
-  const { audioRef, stopPlayback, togglePlayback } = useStudioPlayback();
+  const { stopPlayback, togglePlayback } = useStudioPlayback();
 
   return (
     <main className="flex min-h-screen flex-col bg-[#111315] text-zinc-100">
@@ -28,7 +28,6 @@ export function StudioShell() {
           <SampleLibrary />
         </div>
       </div>
-      <audio ref={audioRef} preload="metadata" />
     </main>
   );
 }

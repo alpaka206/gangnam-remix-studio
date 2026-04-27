@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { mockSamples } from "@/data/mockSamples";
+import { createStudioId } from "@/lib/id";
 import { clampBpm, snapTimeToBeat } from "@/lib/timeline/time";
 import type {
   MainTrackState,
@@ -14,6 +15,7 @@ import type {
 export const STUDIO_STORAGE_KEY = "gangnam-remix-studio-project";
 
 type UploadedSampleInput = {
+  id: string;
   name: string;
   fileName: string;
   duration: number;
@@ -87,7 +89,7 @@ export const useStudioStore = create<StudioStore>()(
               ];
 
             return {
-              id: createId("uploaded-sample"),
+              id: sample.id,
               name: sample.name,
               kind: "uploaded",
               trackId: "sfx",
@@ -303,10 +305,4 @@ function sanitizeSampleForStorage(sample: SampleItem): SampleItem {
   };
 }
 
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
+const createId = createStudioId;
