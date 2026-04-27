@@ -1,0 +1,115 @@
+"use client";
+
+import { Plus, Upload } from "lucide-react";
+import { useState } from "react";
+
+import {
+  createAudioObjectUrl,
+  getAudioDuration,
+  isSupportedAudioFile,
+} from "@/lib/audio/files";
+import { formatTime } from "@/lib/timeline/time";
+import { useStudioStore } from "@/store/studioStore";
+
+export function SampleLibrary() {
+  const [error, setError] = useState<string | null>(null);
+  const samples = useStudioStore((state) => state.samples);
+  const addUploadedSamples = useStudioStore(
+    (state) => state.addUploadedSamples,
+  );
+  const addSampleClip = useStudioStore((state) => state.addSampleClip);
+
+  async function handleSampleUpload(fileList: FileList | null) {
+    const files = Array.from(fileList ?? []);
+
+    if (files.length === 0) {
+      return;
+    }
+
+    const invalidFile = files.find((file) => !isSupportedAudioFile(file));
+
+    if (invalidFile) {
+      setError(`${invalidFile.name}은 지원하지 않는 형식입니다.`);
+      return;
+    }
+
+    setError(null);
+    const uploadedSamples = await Promise.all(
+      files.map(async (file) => ({
+        name: file.name.replace(/\.[^/.]+$/, ""),
+        fileName: file.name,
+        duration: await getAudioDuration(file),
+        objectUrl: createAudioObjectUrl(file),
+      })),
+    );
+
+    addUploadedSamples(uploadedSamples);
+  }
+
+  return (
+    <section
+      className="border-t border-zinc-800 bg-zinc-950"
+      data-testid="sample-library"
+    >
+      <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
+        <div>
+          <p className="text-xs font-semibold uppercase text-zinc-500">
+            Sample Library
+          </p>
+          <p className="text-xs text-zinc-500">
+            Mock effects now, real files can live under /public/audio later.
+          </p>
+        </div>
+        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-100 transition hover:border-amber-300">
+          <Upload size={15} />
+          Upload SFX / Stem
+          <input
+            data-testid="sfx-upload"
+            aria-label="Upload effect sounds"
+            className="sr-only"
+            multiple
+            type="file"
+            accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"
+            onChange={(event) => handleSampleUpload(event.target.files)}
+          />
+        </label>
+      </div>
+
+      {error ? (
+        <p className="px-4 pt-3 text-xs text-rose-300">{error}</p>
+      ) : null}
+
+      <div className="flex gap-3 overflow-x-auto px-4 py-4">
+        {samples.map((sample) => (
+          <button
+            key={sample.id}
+            type="button"
+            className="flex min-w-44 flex-col rounded-md border border-zinc-800 bg-zinc-900 px-3 py-3 text-left transition hover:border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-300/40"
+            data-testid="sample-item"
+            aria-label={`Add ${sample.name} to timeline`}
+            onClick={() => addSampleClip(sample.id)}
+          >
+            <span className="flex items-center justify-between gap-3">
+              <span className="truncate text-sm font-semibold text-zinc-100">
+                {sample.name}
+              </span>
+              <Plus size={15} className="shrink-0 text-amber-200" />
+            </span>
+            <span className="mt-3 flex items-center gap-2">
+              <span
+                className="h-2.5 w-2.5 rounded-sm"
+                style={{ backgroundColor: sample.color }}
+              />
+              <span className="font-mono text-xs text-zinc-500">
+                {sample.trackId.toUpperCase()} · {formatTime(sample.duration)}
+              </span>
+            </span>
+            <span className="mt-2 text-xs text-zinc-500">
+              {sample.kind === "mock" ? "placeholder" : sample.fileName}
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
