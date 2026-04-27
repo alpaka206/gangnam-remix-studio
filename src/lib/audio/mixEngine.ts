@@ -202,17 +202,24 @@ async function resolveMainBuffer(
   context: BaseAudioContext,
   mainTrack: MainTrackState,
 ) {
-  const file = await getAudioAssetFile(MAIN_AUDIO_ASSET_ID);
+  if (!hasMainTrackAudio(mainTrack)) {
+    return null;
+  }
 
+  if (mainTrack.objectUrl) {
+    return decodeUrl(context, mainTrack.objectUrl);
+  }
+
+  const file = await getAudioAssetFile(MAIN_AUDIO_ASSET_ID);
   if (file) {
     return decodeFile(context, file);
   }
 
-  if (!mainTrack.objectUrl || !mainTrack.fileName) {
-    return null;
-  }
+  return null;
+}
 
-  return decodeUrl(context, mainTrack.objectUrl);
+export function hasMainTrackAudio(mainTrack: MainTrackState) {
+  return Boolean(mainTrack.fileName);
 }
 
 async function resolveClipBuffer(

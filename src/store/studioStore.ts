@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import {
   BUNDLED_SAMPLE_AUDIO_FILE_NAME,
   BUNDLED_SAMPLE_AUDIO_URL,
-  DEFAULT_BUNDLED_SAMPLE_ID,
+  STUDIO_PROJECT_VERSION,
   defaultMainTrack,
   initialSamples,
 } from "@/data/studioData";
@@ -30,7 +30,6 @@ type StudioActions = {
   addUploadedSamples: (samples: UploadedSampleInput[]) => void;
   restoreSampleAsset: (sampleId: string, objectUrl: string) => void;
   updateSampleDuration: (sampleId: string, duration: number) => void;
-  purgeBundledSampleState: () => void;
   selectSample: (sampleId: string | null) => void;
   addSampleClip: (
     sampleId: string,
@@ -58,6 +57,7 @@ const uploadedSampleColors = ["#e879f9", "#22c55e", "#38bdf8", "#fb7185"];
 
 export function createInitialStudioState(): StudioProjectState {
   return {
+    projectVersion: STUDIO_PROJECT_VERSION,
     bpm: 132,
     speed: 1,
     snapToBeat: true,
@@ -142,24 +142,6 @@ export const useStudioStore = create<StudioStore>()(
             }),
           };
         }),
-      purgeBundledSampleState: () =>
-        set((state) => ({
-          samples: state.samples.filter(
-            (sample) => sample.id !== DEFAULT_BUNDLED_SAMPLE_ID,
-          ),
-          clips: state.clips.filter(
-            (clip) => clip.sampleId !== DEFAULT_BUNDLED_SAMPLE_ID,
-          ),
-          selectedSampleId:
-            state.selectedSampleId === DEFAULT_BUNDLED_SAMPLE_ID
-              ? null
-              : state.selectedSampleId,
-          selectedClipId:
-            state.clips.find((clip) => clip.id === state.selectedClipId)
-              ?.sampleId === DEFAULT_BUNDLED_SAMPLE_ID
-              ? null
-              : state.selectedClipId,
-        })),
       selectSample: (sampleId) =>
         set({ selectedSampleId: sampleId, selectedClipId: null }),
       addSampleClip: (sampleId, options) => {
@@ -284,16 +266,13 @@ export const useStudioStore = create<StudioStore>()(
       name: STUDIO_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
       partialize: (state): StudioProjectState => ({
+        projectVersion: STUDIO_PROJECT_VERSION,
         bpm: state.bpm,
         speed: state.speed,
         snapToBeat: state.snapToBeat,
         mainTrack: sanitizeMainTrackForStorage(state.mainTrack),
-        clips: state.clips.filter(
-          (clip) => clip.sampleId !== DEFAULT_BUNDLED_SAMPLE_ID,
-        ),
-        samples: state.samples
-          .filter((sample) => sample.id !== DEFAULT_BUNDLED_SAMPLE_ID)
-          .map(sanitizeSampleForStorage),
+        clips: state.clips,
+        samples: state.samples.map(sanitizeSampleForStorage),
         selectedClipId: state.selectedClipId,
         selectedSampleId: state.selectedSampleId,
         playheadTime: state.playheadTime,
@@ -304,23 +283,39 @@ export const useStudioStore = create<StudioStore>()(
       }),
       merge: (persistedState, currentState) => {
         const restored = persistedState as Partial<StudioProjectState>;
+        const isLegacyProject =
+          restored.projectVersion !== STUDIO_PROJECT_VERSION;
         const uploadedSamples = (restored.samples ?? [])
           .filter((sample) => sample.kind === "uploaded")
           .map(sanitizeSampleForStorage);
+        const restoredSamples = [
+          ...cloneSamples(initialSamples),
+          ...uploadedSamples,
+        ];
+        const restoredClips = isLegacyProject
+          ? []
+          : filterRestoredClips(
+              restored.clips ?? currentState.clips,
+              restoredSamples,
+            );
 
         return {
           ...currentState,
+          projectVersion: STUDIO_PROJECT_VERSION,
           bpm: restored.bpm ?? currentState.bpm,
           speed: restored.speed ?? currentState.speed,
           snapToBeat: restored.snapToBeat ?? currentState.snapToBeat,
-          mainTrack: restoreMainTrack(restored.mainTrack),
-          samples: [...cloneSamples(initialSamples), ...uploadedSamples],
-          clips: filterRestoredClips(
-            restored.clips ?? currentState.clips,
-            uploadedSamples,
-          ),
-          selectedClipId: restored.selectedClipId ?? null,
-          selectedSampleId: restored.selectedSampleId ?? null,
+          mainTrack: isLegacyProject
+            ? { ...defaultMainTrack }
+            : restoreMainTrack(restored.mainTrack),
+          samples: restoredSamples,
+          clips: restoredClips,
+          selectedClipId: isLegacyProject
+            ? null
+            : (restored.selectedClipId ?? null),
+          selectedSampleId: isLegacyProject
+            ? null
+            : (restored.selectedSampleId ?? null),
           playheadTime: restored.playheadTime ?? currentState.playheadTime,
           isPlaying: false,
           exportStatus: "idle",
@@ -390,7 +385,6 @@ function filterRestoredClips(clips: StudioClip[], samples: SampleItem[]) {
     .filter(
       (clip) => clip.sourceKind === "uploaded" || clip.sourceKind === "bundled",
     )
-    .filter((clip) => clip.sampleId !== DEFAULT_BUNDLED_SAMPLE_ID)
     .filter((clip) => (clip.sampleId ? sampleIds.has(clip.sampleId) : false))
     .map((clip) => ({ ...clip, trackId: "clips" as const }));
 }

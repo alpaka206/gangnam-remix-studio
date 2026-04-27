@@ -9,15 +9,12 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   await expect(page.getByText("Upload Main", { exact: true })).toBeVisible();
   await expect(page.getByText("Upload Meme Sound")).toBeVisible();
   await expect(page.getByText("No main music loaded")).toBeVisible();
-  await expect(
-    page.getByText("Upload a sound below to place it here."),
-  ).toBeVisible();
-  await expect(
-    page.getByText(
-      "No sounds loaded. Upload a meme sound to add it to the timeline.",
-    ),
-  ).toBeVisible();
+  await expect(page.getByLabel("Add op from left sources")).toBeVisible();
   await expect(page.getByTestId("timeline-clip")).toHaveCount(0);
+
+  await page.getByLabel("Add op from left sources").click();
+  await expect(page.getByTestId("clip-inspector")).toContainText("op");
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(1);
 
   await page.getByLabel("Upload meme sounds").setInputFiles({
     name: "test-meme.wav",
@@ -26,7 +23,7 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   });
   await page.getByLabel("Add test-meme to timeline").click();
   await expect(page.getByTestId("clip-inspector")).toContainText("test-meme");
-  await expect(page.getByTestId("timeline-clip")).toHaveCount(1);
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(2);
 
   const timelineBox = await page.getByTestId("timeline").boundingBox();
   expect(timelineBox).toBeTruthy();
@@ -34,7 +31,7 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   await page.keyboard.press("Control+C");
   await page.keyboard.press("Control+V");
   await page.keyboard.press("Control+V");
-  await expect(page.getByTestId("timeline-clip")).toHaveCount(3);
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(4);
 
   await page.getByLabel("Upload main music").setInputFiles({
     name: "test-main.wav",
@@ -51,14 +48,14 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
 
   await page.getByLabel("Add test-meme to timeline").click();
   await expect(page.getByTestId("clip-inspector")).toContainText("test-meme");
-  await expect(page.getByTestId("timeline-clip")).toHaveCount(4);
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(5);
 
   await page
     .getByLabel("Add test-meme from left sources")
     .dragTo(page.getByTestId("timeline"), {
       targetPosition: { x: 420, y: 120 },
     });
-  await expect(page.getByTestId("timeline-clip")).toHaveCount(5);
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(6);
 
   const beforeZoom = await page
     .getByTestId("timeline-content")

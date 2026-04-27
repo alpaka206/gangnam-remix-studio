@@ -22,14 +22,13 @@ describe("StudioShell", () => {
     expect(screen.getByLabelText("Upload main music")).toBeInTheDocument();
     expect(screen.getByLabelText("Upload meme sounds")).toBeInTheDocument();
     expect(screen.getByText("No main music loaded")).toBeInTheDocument();
+    expect(screen.getAllByText("op.mp3").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Upload a sound below to place it here."),
+      screen.getByRole("button", { name: "Add op from left sources" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "No sounds loaded. Upload a meme sound to add it to the timeline.",
-      ),
+      screen.getByRole("button", { name: "Add op to timeline" }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("op.mp3")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("timeline-clip")).not.toBeInTheDocument();
   });
 });

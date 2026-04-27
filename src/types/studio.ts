@@ -49,6 +49,7 @@ export interface StudioClip {
 }
 
 export interface StudioProjectState {
+  projectVersion: number;
   bpm: number;
   speed: PlaybackSpeed;
   snapToBeat: boolean;

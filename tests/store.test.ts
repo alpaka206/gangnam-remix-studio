@@ -8,12 +8,18 @@ describe("studio store", () => {
     useStudioStore.getState().resetProject();
   });
 
-  it("starts with no main music and no preloaded sounds", () => {
+  it("starts with op.mp3 as an available effect source but no placed sounds", () => {
     const state = useStudioStore.getState();
 
     expect(state.mainTrack.fileName).toBeNull();
     expect(state.mainTrack.objectUrl).toBeNull();
-    expect(state.samples).toHaveLength(0);
+    expect(state.samples).toHaveLength(1);
+    expect(state.samples[0]).toMatchObject({
+      id: "bundled-op",
+      fileName: "op.mp3",
+      kind: "bundled",
+      objectUrl: "/op.mp3",
+    });
     expect(state.clips).toHaveLength(0);
   });
 
@@ -32,39 +38,15 @@ describe("studio store", () => {
     expect(state.mainTrack.status).toBe("empty");
   });
 
-  it("does not add bundled sounds unless the user uploads a source", () => {
-    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
-
-    const state = useStudioStore.getState();
-
-    expect(clipId).toBeNull();
-    expect(state.clips).toHaveLength(0);
-  });
-
-  it("purges bundled op.mp3 state left by older versions", () => {
-    useStudioStore.getState().addUploadedSamples([
-      {
-        id: "bundled-op",
-        name: "op",
-        fileName: "op.mp3",
-        duration: 1,
-        objectUrl: "/op.mp3",
-      },
-    ]);
+  it("can add the bundled op.mp3 effect only when the user chooses it", () => {
     const clipId = useStudioStore.getState().addSampleClip("bundled-op");
 
     expect(clipId).toBeTruthy();
 
-    useStudioStore.getState().purgeBundledSampleState();
-
     const state = useStudioStore.getState();
 
-    expect(state.samples.some((sample) => sample.id === "bundled-op")).toBe(
-      false,
-    );
-    expect(state.clips.some((clip) => clip.sampleId === "bundled-op")).toBe(
-      false,
-    );
+    expect(state.clips).toHaveLength(1);
+    expect(state.clips[0]?.sampleId).toBe("bundled-op");
   });
 
   it("does not use the main music length as a fallback for sound blocks", () => {

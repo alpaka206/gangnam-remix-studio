@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { getClipPlaybackTiming } from "@/lib/audio/mixEngine";
+import {
+  getClipPlaybackTiming,
+  hasMainTrackAudio,
+} from "@/lib/audio/mixEngine";
 
 describe("mix engine clip timing", () => {
   it("fits non-looping audio to the visual sound block length", () => {
@@ -46,5 +49,27 @@ describe("mix engine clip timing", () => {
       playbackRate: 1.5,
       sourceOffset: 1,
     });
+  });
+
+  it("does not resolve stale persistent main audio when no main file is loaded", () => {
+    expect(
+      hasMainTrackAudio({
+        fileName: null,
+        objectUrl: null,
+        duration: 0,
+        status: "empty",
+      }),
+    ).toBe(false);
+  });
+
+  it("allows main audio only after the user loads a main file", () => {
+    expect(
+      hasMainTrackAudio({
+        fileName: "main.wav",
+        objectUrl: null,
+        duration: 0,
+        status: "stale",
+      }),
+    ).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 import { MAIN_AUDIO_ASSET_ID, getAudioAssetFile } from "@/lib/audio/assets";
 import {
   getMixTimelineEnd,
+  hasMainTrackAudio,
   scheduleMix,
   type MixRenderData,
 } from "@/lib/audio/mixEngine";
@@ -35,12 +36,13 @@ export async function renderMixToWav(mix: MixRenderData) {
 }
 
 async function resolveMainTrackDuration(mainTrack: MixRenderData["mainTrack"]) {
-  const file = await getAudioAssetFile(MAIN_AUDIO_ASSET_ID);
-  const arrayBuffer = file
-    ? await file.arrayBuffer()
-    : mainTrack.objectUrl
-      ? await fetchAudioArrayBuffer(mainTrack.objectUrl)
-      : null;
+  if (!hasMainTrackAudio(mainTrack)) {
+    return 0;
+  }
+
+  const arrayBuffer = mainTrack.objectUrl
+    ? await fetchAudioArrayBuffer(mainTrack.objectUrl)
+    : await fetchPersistentMainAudioArrayBuffer();
 
   if (!arrayBuffer) {
     return 0;
@@ -50,6 +52,12 @@ async function resolveMainTrackDuration(mainTrack: MixRenderData["mainTrack"]) {
   const decoded = await context.decodeAudioData(arrayBuffer.slice(0));
 
   return decoded.duration;
+}
+
+async function fetchPersistentMainAudioArrayBuffer() {
+  const file = await getAudioAssetFile(MAIN_AUDIO_ASSET_ID);
+
+  return file ? file.arrayBuffer() : null;
 }
 
 async function fetchAudioArrayBuffer(url: string) {
