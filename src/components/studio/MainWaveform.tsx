@@ -91,7 +91,7 @@ export function MainWaveform({ className }: MainWaveformProps) {
           ))}
           <span className="absolute px-2 text-xs font-medium text-zinc-400">
             {mainTrack.fileName
-              ? "Reload the audio file to restore waveform playback"
+              ? "Restoring uploaded audio for waveform playback"
               : "Upload main music to generate waveform"}
           </span>
         </div>

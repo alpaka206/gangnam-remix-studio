@@ -29,6 +29,7 @@ type StudioActions = {
   setSnapToBeat: (enabled: boolean) => void;
   setMainTrack: (track: MainTrackState) => void;
   addUploadedSamples: (samples: UploadedSampleInput[]) => void;
+  restoreSampleAsset: (sampleId: string, objectUrl: string) => void;
   addSampleClip: (sampleId: string) => string | null;
   selectClip: (clipId: string | null) => void;
   moveClip: (clipId: string, start: number) => void;
@@ -105,6 +106,12 @@ export const useStudioStore = create<StudioStore>()(
 
           return { samples: [...state.samples, ...createdSamples] };
         }),
+      restoreSampleAsset: (sampleId, objectUrl) =>
+        set((state) => ({
+          samples: state.samples.map((sample) =>
+            sample.id === sampleId ? { ...sample, objectUrl } : sample,
+          ),
+        })),
       addSampleClip: (sampleId) => {
         const state = get();
         const sample = state.samples.find((item) => item.id === sampleId);

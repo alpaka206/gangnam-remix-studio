@@ -1,4 +1,4 @@
-import { MAIN_AUDIO_ASSET_ID, getRegisteredAudioFile } from "@/lib/audio/assets";
+import { MAIN_AUDIO_ASSET_ID, getAudioAssetFile } from "@/lib/audio/assets";
 import { createMockSampleBuffer } from "@/lib/audio/mockBuffers";
 import type {
   MainTrackState,
@@ -159,9 +159,9 @@ async function resolveMainBuffer(
   context: BaseAudioContext,
   mainTrack: MainTrackState,
 ) {
-  const file = getRegisteredAudioFile(MAIN_AUDIO_ASSET_ID);
+  const file = await getAudioAssetFile(MAIN_AUDIO_ASSET_ID);
 
-  if (!file || mainTrack.status !== "ready") {
+  if (!file || !mainTrack.fileName) {
     return null;
   }
 
@@ -184,7 +184,7 @@ async function resolveClipBuffer(
     return null;
   }
 
-  const file = getRegisteredAudioFile(sample.id);
+  const file = await getAudioAssetFile(sample.id);
 
   if (!file) {
     return null;

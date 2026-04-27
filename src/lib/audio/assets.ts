@@ -1,3 +1,5 @@
+import { loadPersistentAudioAsset } from "@/lib/audio/persistentAssets";
+
 export const MAIN_AUDIO_ASSET_ID = "main-audio";
 
 type RegisteredAudioAsset = {
@@ -19,6 +21,16 @@ export function registerAudioAsset(assetId: string, file: File, objectUrl: strin
 
 export function getRegisteredAudioFile(assetId: string) {
   return audioAssets.get(assetId)?.file ?? null;
+}
+
+export async function getAudioAssetFile(assetId: string) {
+  const registeredFile = getRegisteredAudioFile(assetId);
+
+  if (registeredFile) {
+    return registeredFile;
+  }
+
+  return loadPersistentAudioAsset(assetId);
 }
 
 export function revokeRegisteredAudioAsset(assetId: string) {

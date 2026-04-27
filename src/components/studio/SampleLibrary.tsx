@@ -9,6 +9,7 @@ import {
   getAudioDuration,
   isSupportedAudioFile,
 } from "@/lib/audio/files";
+import { savePersistentAudioAsset } from "@/lib/audio/persistentAssets";
 import { createStudioId } from "@/lib/id";
 import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
@@ -31,7 +32,7 @@ export function SampleLibrary() {
     const invalidFile = files.find((file) => !isSupportedAudioFile(file));
 
     if (invalidFile) {
-      setError(`${invalidFile.name}은 지원하지 않는 형식입니다.`);
+      setError(`${invalidFile.name} is not a supported audio file.`);
       return;
     }
 
@@ -42,6 +43,7 @@ export function SampleLibrary() {
         const objectUrl = createAudioObjectUrl(file);
 
         registerAudioAsset(id, file, objectUrl);
+        void savePersistentAudioAsset(id, file);
 
         return {
           id,
