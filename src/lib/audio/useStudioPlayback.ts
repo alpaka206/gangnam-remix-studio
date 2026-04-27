@@ -14,6 +14,7 @@ export function useStudioPlayback() {
   const scheduledMixRef = useRef<ScheduledMix | null>(null);
   const frameRef = useRef<number | null>(null);
   const playheadTimeRef = useRef(0);
+  const previousSpeedRef = useRef<number | null>(null);
   const playbackStartedRef = useRef<{
     startedAt: number;
     startPlayhead: number;
@@ -96,13 +97,7 @@ export function useStudioPlayback() {
     };
   }, [stopScheduledMix]);
 
-  const togglePlayback = useCallback(async () => {
-    if (isPlaying) {
-      stopScheduledMix();
-      setPlayback(false);
-      return;
-    }
-
+  const startPlayback = useCallback(async () => {
     const AudioContextClass =
       window.AudioContext ??
       (window as Window & { webkitAudioContext?: typeof AudioContext })
@@ -111,6 +106,8 @@ export function useStudioPlayback() {
     if (!AudioContextClass) {
       return;
     }
+
+    stopScheduledMix();
 
     const context = new AudioContextClass();
     audioContextRef.current = context;
@@ -136,7 +133,6 @@ export function useStudioPlayback() {
     startPlayheadLoop(speed, setPlayheadTime, setPlayback);
   }, [
     clips,
-    isPlaying,
     mainTrack,
     samples,
     setPlayback,
@@ -145,6 +141,33 @@ export function useStudioPlayback() {
     startPlayheadLoop,
     stopScheduledMix,
   ]);
+
+  const togglePlayback = useCallback(async () => {
+    if (isPlaying) {
+      stopScheduledMix();
+      setPlayback(false);
+      return;
+    }
+
+    await startPlayback();
+  }, [isPlaying, setPlayback, startPlayback, stopScheduledMix]);
+
+  useEffect(() => {
+    if (previousSpeedRef.current === null) {
+      previousSpeedRef.current = speed;
+      return;
+    }
+
+    if (previousSpeedRef.current === speed) {
+      return;
+    }
+
+    previousSpeedRef.current = speed;
+
+    if (isPlaying) {
+      void startPlayback();
+    }
+  }, [isPlaying, speed, startPlayback]);
 
   const stopPlayback = useCallback(() => {
     stopScheduledMix();

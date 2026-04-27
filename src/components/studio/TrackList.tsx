@@ -11,6 +11,7 @@ import {
 } from "@/lib/audio/files";
 import { savePersistentAudioAsset } from "@/lib/audio/persistentAssets";
 import { cn } from "@/lib/cn";
+import { setSampleDragData } from "@/lib/timeline/drag";
 import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
 
@@ -86,7 +87,7 @@ export function TrackList() {
           <p className="text-xs font-semibold uppercase text-zinc-500">
             Meme Sounds
           </p>
-          <p className="font-mono text-[11px] text-zinc-600">click to add</p>
+          <p className="font-mono text-[11px] text-zinc-600">click / drag</p>
         </div>
         <div className="space-y-1">
           {samples.map((sample) => (
@@ -94,13 +95,17 @@ export function TrackList() {
               key={sample.id}
               type="button"
               className={cn(
-                "flex w-full items-center justify-between gap-2 rounded-md border px-2 py-2 text-left text-sm transition",
+                "flex w-full select-none items-center justify-between gap-2 rounded-md border px-2 py-2 text-left text-sm transition",
                 selectedSampleId === sample.id
                   ? "border-amber-300 bg-amber-300/10 text-amber-100"
                   : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-zinc-600",
               )}
               data-testid="left-audio-source"
               aria-label={`Add ${sample.name} from left sources`}
+              draggable
+              onDragStart={(event) =>
+                setSampleDragData(event.dataTransfer, sample.id)
+              }
               onClick={() => {
                 selectSample(sample.id);
                 addSampleClip(sample.id);
@@ -115,9 +120,15 @@ export function TrackList() {
                 </span>
               </span>
               <span
-                className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                style={{ backgroundColor: sample.color }}
-              />
+                className="flex shrink-0 items-center gap-2 font-mono text-[11px] uppercase text-amber-200"
+                aria-hidden="true"
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-sm"
+                  style={{ backgroundColor: sample.color }}
+                />
+                Add
+              </span>
             </button>
           ))}
         </div>

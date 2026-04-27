@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
 import { cn } from "@/lib/cn";
@@ -8,22 +8,14 @@ import { useStudioStore } from "@/store/studioStore";
 
 type MainWaveformProps = {
   className?: string;
+  style?: CSSProperties;
 };
 
-export function MainWaveform({ className }: MainWaveformProps) {
+export function MainWaveform({ className, style }: MainWaveformProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const waveSurferRef = useRef<WaveSurfer | null>(null);
   const mainTrack = useStudioStore((state) => state.mainTrack);
   const setMainTrack = useStudioStore((state) => state.setMainTrack);
-  const waveformBars = useMemo(
-    () =>
-      Array.from({ length: 96 }, (_, index) => {
-        const level =
-          Math.sin(index * 0.55) * 0.35 + Math.sin(index * 0.17) * 0.3;
-        return Math.max(12, Math.round((0.55 + level) * 52));
-      }),
-    [],
-  );
 
   useEffect(() => {
     let cancelled = false;
@@ -76,24 +68,14 @@ export function MainWaveform({ className }: MainWaveformProps) {
         "relative h-full min-h-14 w-full overflow-hidden rounded-md border border-zinc-700 bg-zinc-950/60",
         className,
       )}
+      style={style}
       data-testid="main-waveform"
     >
       {mainTrack.objectUrl ? (
         <div ref={containerRef} className="h-full w-full px-2 py-2" />
       ) : (
-        <div className="flex h-full items-center gap-px px-3">
-          {waveformBars.map((height, index) => (
-            <span
-              key={`${height}-${index}`}
-              className="w-1 flex-1 rounded-sm bg-zinc-600/60"
-              style={{ height }}
-            />
-          ))}
-          <span className="absolute px-2 text-xs font-medium text-zinc-400">
-            {mainTrack.fileName
-              ? "Restoring uploaded audio for waveform playback"
-              : "Upload main music to generate waveform"}
-          </span>
+        <div className="flex h-full items-center px-3 text-xs font-medium text-zinc-400">
+          Restoring uploaded audio for waveform playback
         </div>
       )}
     </div>

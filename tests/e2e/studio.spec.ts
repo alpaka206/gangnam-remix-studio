@@ -43,6 +43,30 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   await expect(page.getByTestId("clip-inspector")).toContainText("test-meme");
   await expect(page.getByTestId("timeline-clip")).toHaveCount(4);
 
+  await page
+    .getByLabel("Add op from left sources")
+    .dragTo(page.getByTestId("timeline"), {
+      targetPosition: { x: 420, y: 120 },
+    });
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(5);
+
+  const beforeZoom = await page
+    .getByTestId("timeline-content")
+    .evaluate((element) => element.getBoundingClientRect().width);
+  await page.getByTestId("timeline").dispatchEvent("wheel", {
+    bubbles: true,
+    cancelable: true,
+    clientX: 480,
+    deltaY: -700,
+  });
+  await expect
+    .poll(async () =>
+      page
+        .getByTestId("timeline-content")
+        .evaluate((element) => element.getBoundingClientRect().width),
+    )
+    .toBeGreaterThan(beforeZoom);
+
   await page.getByLabel("BPM").fill("128");
   await expect(page.getByLabel("BPM")).toHaveValue("128");
 
@@ -58,9 +82,9 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   await expect(page.getByText("test-main.wav")).toBeVisible();
 
   await page.getByTestId("timeline-clip").last().click();
-  await page.getByTestId("delete-clip").click();
+  await page.keyboard.press("Delete");
   await expect(page.getByTestId("clip-inspector")).toContainText(
-    "Select a clip",
+    "Select a sound",
   );
 
   const downloadPromise = page.waitForEvent("download");

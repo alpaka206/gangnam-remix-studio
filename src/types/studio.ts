@@ -26,6 +26,14 @@ export interface SampleItem {
   objectUrl?: string | null;
 }
 
+export interface UploadedSampleInput {
+  id: string;
+  name: string;
+  fileName: string;
+  duration: number;
+  objectUrl: string | null;
+}
+
 export interface StudioClip {
   id: string;
   name: string;

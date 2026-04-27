@@ -3,14 +3,11 @@
 import { Plus, Upload } from "lucide-react";
 import { useState } from "react";
 
-import { registerAudioAsset } from "@/lib/audio/assets";
 import {
-  createAudioObjectUrl,
-  getAudioDuration,
-  isSupportedAudioFile,
-} from "@/lib/audio/files";
-import { savePersistentAudioAsset } from "@/lib/audio/persistentAssets";
-import { createStudioId } from "@/lib/id";
+  createUploadedSampleInputs,
+  findUnsupportedAudioFile,
+} from "@/lib/audio/importSamples";
+import { setSampleDragData } from "@/lib/timeline/drag";
 import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
 
@@ -31,7 +28,7 @@ export function SampleLibrary() {
       return;
     }
 
-    const invalidFile = files.find((file) => !isSupportedAudioFile(file));
+    const invalidFile = findUnsupportedAudioFile(files);
 
     if (invalidFile) {
       setError(`${invalidFile.name} is not a supported audio file.`);
@@ -39,25 +36,7 @@ export function SampleLibrary() {
     }
 
     setError(null);
-    const uploadedSamples = await Promise.all(
-      files.map(async (file) => {
-        const id = createStudioId("uploaded-sample");
-        const objectUrl = createAudioObjectUrl(file);
-
-        registerAudioAsset(id, file, objectUrl);
-        void savePersistentAudioAsset(id, file);
-
-        return {
-          id,
-          name: file.name.replace(/\.[^/.]+$/, ""),
-          fileName: file.name,
-          duration: await getAudioDuration(file),
-          objectUrl,
-        };
-      }),
-    );
-
-    addUploadedSamples(uploadedSamples);
+    addUploadedSamples(await createUploadedSampleInputs(files));
   }
 
   return (
@@ -71,7 +50,7 @@ export function SampleLibrary() {
             Meme Sound Library
           </p>
           <p className="text-xs text-zinc-500">
-            Upload short meme sounds or reuse op.mp3 as many times as needed.
+            Click + to place at the playhead, or drag a sound onto the timeline.
           </p>
         </div>
         <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-100 transition hover:border-amber-300">
@@ -104,13 +83,17 @@ export function SampleLibrary() {
           <button
             key={sample.id}
             type="button"
-            className={`flex min-w-44 flex-col rounded-md border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-amber-300/40 ${
+            className={`flex min-w-44 select-none flex-col rounded-md border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-amber-300/40 ${
               selectedSampleId === sample.id
                 ? "border-amber-300 bg-amber-300/10"
                 : "border-zinc-800 bg-zinc-900 hover:border-amber-300"
             }`}
             data-testid="sample-item"
             aria-label={`Add ${sample.name} to timeline`}
+            draggable
+            onDragStart={(event) =>
+              setSampleDragData(event.dataTransfer, sample.id)
+            }
             onClick={() => {
               selectSample(sample.id);
               addSampleClip(sample.id);
@@ -120,7 +103,10 @@ export function SampleLibrary() {
               <span className="truncate text-sm font-semibold text-zinc-100">
                 {sample.name}
               </span>
-              <Plus size={15} className="shrink-0 text-amber-200" />
+              <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[11px] uppercase text-amber-200">
+                <Plus size={14} />
+                Add
+              </span>
             </span>
             <span className="mt-3 flex items-center gap-2">
               <span

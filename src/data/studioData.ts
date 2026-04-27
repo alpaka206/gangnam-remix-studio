@@ -4,10 +4,10 @@ export const DEFAULT_MAIN_AUDIO_URL = "/op.mp3";
 export const DEFAULT_MAIN_AUDIO_FILE_NAME = "op.mp3";
 
 export const defaultMainTrack: MainTrackState = {
-  fileName: DEFAULT_MAIN_AUDIO_FILE_NAME,
-  objectUrl: DEFAULT_MAIN_AUDIO_URL,
+  fileName: null,
+  objectUrl: null,
   duration: 0,
-  status: "ready",
+  status: "empty",
 };
 
 export const DEFAULT_BUNDLED_SAMPLE_ID = "bundled-op";

@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { defaultMainTrack, initialSamples } from "@/data/studioData";
+import {
+  DEFAULT_MAIN_AUDIO_FILE_NAME,
+  defaultMainTrack,
+  initialSamples,
+} from "@/data/studioData";
 import { createStudioId } from "@/lib/id";
 import { clampBpm, snapTimeToBeat } from "@/lib/timeline/time";
 import type {
@@ -11,17 +15,10 @@ import type {
   SampleItem,
   StudioClip,
   StudioProjectState,
+  UploadedSampleInput,
 } from "@/types/studio";
 
 export const STUDIO_STORAGE_KEY = "gangnam-remix-studio-op-only-project";
-
-type UploadedSampleInput = {
-  id: string;
-  name: string;
-  fileName: string;
-  duration: number;
-  objectUrl: string | null;
-};
 
 type StudioActions = {
   setBpm: (bpm: number) => void;
@@ -34,11 +31,11 @@ type StudioActions = {
   selectSample: (sampleId: string | null) => void;
   addSampleClip: (
     sampleId: string,
-    options?: { start?: number },
+    options?: { start?: number; snap?: boolean },
   ) => string | null;
   duplicateClip: (
     clipId: string,
-    options?: { start?: number },
+    options?: { start?: number; snap?: boolean },
   ) => string | null;
   selectClip: (clipId: string | null) => void;
   moveClip: (clipId: string, start: number) => void;
@@ -135,10 +132,10 @@ export const useStudioStore = create<StudioStore>()(
           return null;
         }
 
-        const start = snapTimeToBeat(
+        const start = resolveClipStart(
           options?.start ?? state.playheadTime,
           state.bpm,
-          state.snapToBeat,
+          options?.snap ?? state.snapToBeat,
         );
         const duration = Math.max(
           0.25,
@@ -174,10 +171,10 @@ export const useStudioStore = create<StudioStore>()(
           return null;
         }
 
-        const start = snapTimeToBeat(
+        const start = resolveClipStart(
           options?.start ?? sourceClip.start + sourceClip.duration,
           state.bpm,
-          state.snapToBeat,
+          options?.snap ?? state.snapToBeat,
         );
         const clip: StudioClip = {
           ...sourceClip,
@@ -310,7 +307,7 @@ function restoreMainTrack(track?: MainTrackState): MainTrackState {
     return { ...defaultMainTrack };
   }
 
-  if (!track.fileName || track.fileName === defaultMainTrack.fileName) {
+  if (!track.fileName || track.fileName === DEFAULT_MAIN_AUDIO_FILE_NAME) {
     return { ...defaultMainTrack, duration: track.duration || 0 };
   }
 
@@ -335,6 +332,10 @@ function sanitizeSampleForStorage(sample: SampleItem): SampleItem {
     trackId: "clips",
     objectUrl: null,
   };
+}
+
+function resolveClipStart(start: number, bpm: number, shouldSnap: boolean) {
+  return shouldSnap ? snapTimeToBeat(start, bpm, true) : Math.max(0, start);
 }
 
 const createId = createStudioId;

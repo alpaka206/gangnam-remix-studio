@@ -11,8 +11,8 @@ describe("studio store", () => {
   it("starts with op.mp3 as the only bundled audio source", () => {
     const state = useStudioStore.getState();
 
-    expect(state.mainTrack.fileName).toBe("op.mp3");
-    expect(state.mainTrack.objectUrl).toBe("/op.mp3");
+    expect(state.mainTrack.fileName).toBeNull();
+    expect(state.mainTrack.objectUrl).toBeNull();
     expect(state.samples).toHaveLength(1);
     expect(state.samples[0]).toMatchObject({
       fileName: "op.mp3",
@@ -103,6 +103,18 @@ describe("studio store", () => {
 
     expect(duplicatedClip?.sampleId).toBe("bundled-op");
     expect(duplicatedClip?.start).toBeGreaterThanOrEqual(0);
+  });
+
+  it("can place a sound at an unsnapped timeline position", () => {
+    const clipId = useStudioStore
+      .getState()
+      .addSampleClip("bundled-op", { start: 1.37, snap: false });
+
+    const clip = useStudioStore
+      .getState()
+      .clips.find((item) => item.id === clipId);
+
+    expect(clip?.start).toBe(1.37);
   });
 });
 

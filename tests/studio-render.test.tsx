@@ -17,7 +17,6 @@ describe("StudioShell", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Sources")).toBeInTheDocument();
     expect(screen.getByText("Meme Sounds")).toBeInTheDocument();
-    expect(screen.getByText("Meme Clips")).toBeInTheDocument();
     expect(screen.getByTestId("timeline")).toBeInTheDocument();
     expect(screen.getByTestId("sample-library")).toBeInTheDocument();
     expect(screen.getByLabelText("Upload main music")).toBeInTheDocument();
