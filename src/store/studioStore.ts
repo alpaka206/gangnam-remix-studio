@@ -2,10 +2,12 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { mockSamples } from "@/data/mockSamples";
+import { createStudioId } from "@/lib/id";
 import { clampBpm, snapTimeToBeat } from "@/lib/timeline/time";
 import type {
   MainTrackState,
   PlaybackSpeed,
+  ExportStatus,
   SampleItem,
   StudioClip,
   StudioProjectState,
@@ -14,6 +16,7 @@ import type {
 export const STUDIO_STORAGE_KEY = "gangnam-remix-studio-project";
 
 type UploadedSampleInput = {
+  id: string;
   name: string;
   fileName: string;
   duration: number;
@@ -26,6 +29,7 @@ type StudioActions = {
   setSnapToBeat: (enabled: boolean) => void;
   setMainTrack: (track: MainTrackState) => void;
   addUploadedSamples: (samples: UploadedSampleInput[]) => void;
+  restoreSampleAsset: (sampleId: string, objectUrl: string) => void;
   addSampleClip: (sampleId: string) => string | null;
   selectClip: (clipId: string | null) => void;
   moveClip: (clipId: string, start: number) => void;
@@ -34,7 +38,8 @@ type StudioActions = {
   setPlayheadTime: (time: number) => void;
   setPlayback: (isPlaying: boolean) => void;
   saveProject: () => void;
-  startExport: () => void;
+  setExportStatus: (status: ExportStatus) => void;
+  setExportError: (message: string | null) => void;
   resetProject: () => void;
 };
 
@@ -59,6 +64,7 @@ export function createInitialStudioState(): StudioProjectState {
     playheadTime: 0,
     isPlaying: false,
     exportStatus: "idle",
+    exportError: null,
     lastSavedAt: null,
   };
 }
@@ -87,7 +93,7 @@ export const useStudioStore = create<StudioStore>()(
               ];
 
             return {
-              id: createId("uploaded-sample"),
+              id: sample.id,
               name: sample.name,
               kind: "uploaded",
               trackId: "sfx",
@@ -100,6 +106,12 @@ export const useStudioStore = create<StudioStore>()(
 
           return { samples: [...state.samples, ...createdSamples] };
         }),
+      restoreSampleAsset: (sampleId, objectUrl) =>
+        set((state) => ({
+          samples: state.samples.map((sample) =>
+            sample.id === sampleId ? { ...sample, objectUrl } : sample,
+          ),
+        })),
       addSampleClip: (sampleId) => {
         const state = get();
         const sample = state.samples.find((item) => item.id === sampleId);
@@ -179,7 +191,8 @@ export const useStudioStore = create<StudioStore>()(
       setPlayback: (isPlaying) => set({ isPlaying }),
       saveProject: () =>
         set({ lastSavedAt: new Date().toISOString(), exportStatus: "idle" }),
-      startExport: () => set({ exportStatus: "preparing" }),
+      setExportStatus: (status) => set({ exportStatus: status }),
+      setExportError: (message) => set({ exportError: message }),
       resetProject: () => set(createInitialStudioState()),
     }),
     {
@@ -196,6 +209,7 @@ export const useStudioStore = create<StudioStore>()(
         playheadTime: state.playheadTime,
         isPlaying: false,
         exportStatus: "idle",
+        exportError: null,
         lastSavedAt: state.lastSavedAt,
       }),
       merge: (persistedState, currentState) => {
@@ -213,6 +227,7 @@ export const useStudioStore = create<StudioStore>()(
           selectedClipId: restored.selectedClipId ?? null,
           isPlaying: false,
           exportStatus: "idle",
+          exportError: null,
         };
       },
     },
@@ -303,10 +318,4 @@ function sanitizeSampleForStorage(sample: SampleItem): SampleItem {
   };
 }
 
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
+const createId = createStudioId;

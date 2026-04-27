@@ -4,11 +4,13 @@ import { Music, Upload } from "lucide-react";
 import { useState } from "react";
 
 import { trackDefinitions } from "@/data/mockSamples";
+import { MAIN_AUDIO_ASSET_ID, registerAudioAsset } from "@/lib/audio/assets";
 import {
   createAudioObjectUrl,
   getAudioDuration,
   isSupportedAudioFile,
 } from "@/lib/audio/files";
+import { savePersistentAudioAsset } from "@/lib/audio/persistentAssets";
 import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
@@ -24,18 +26,16 @@ export function TrackList() {
     }
 
     if (!isSupportedAudioFile(file)) {
-      setError("mp3, wav, m4a 파일만 지원합니다.");
+      setError("Only mp3, wav, and m4a files are supported.");
       return;
-    }
-
-    if (mainTrack.objectUrl) {
-      URL.revokeObjectURL(mainTrack.objectUrl);
     }
 
     setError(null);
     const objectUrl = createAudioObjectUrl(file);
     const duration = await getAudioDuration(file);
 
+    registerAudioAsset(MAIN_AUDIO_ASSET_ID, file, objectUrl);
+    void savePersistentAudioAsset(MAIN_AUDIO_ASSET_ID, file);
     setMainTrack({
       fileName: file.name,
       objectUrl,
@@ -71,7 +71,7 @@ export function TrackList() {
             {mainTrack.duration > 0
               ? formatTime(mainTrack.duration)
               : mainTrack.status === "stale"
-                ? "reload required"
+                ? "restoring audio"
                 : "mp3 / wav / m4a"}
           </p>
         </div>

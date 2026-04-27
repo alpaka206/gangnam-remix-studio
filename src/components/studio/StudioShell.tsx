@@ -5,14 +5,20 @@ import { SampleLibrary } from "@/components/studio/SampleLibrary";
 import { Timeline } from "@/components/studio/Timeline";
 import { TrackList } from "@/components/studio/TrackList";
 import { TransportBar } from "@/components/studio/TransportBar";
+import { useMixExport } from "@/lib/audio/useMixExport";
+import { usePersistedAudioAssets } from "@/lib/audio/usePersistedAudioAssets";
 import { useStudioPlayback } from "@/lib/audio/useStudioPlayback";
 
 export function StudioShell() {
-  const { audioRef, stopPlayback, togglePlayback } = useStudioPlayback();
+  const { stopPlayback, togglePlayback } = useStudioPlayback();
+  const exportMix = useMixExport();
+
+  usePersistedAudioAssets();
 
   return (
     <main className="flex min-h-screen flex-col bg-[#111315] text-zinc-100">
       <TransportBar
+        onExportMix={exportMix}
         onStopPlayback={stopPlayback}
         onTogglePlayback={togglePlayback}
       />
@@ -28,7 +34,6 @@ export function StudioShell() {
           <SampleLibrary />
         </div>
       </div>
-      <audio ref={audioRef} preload="metadata" />
     </main>
   );
 }

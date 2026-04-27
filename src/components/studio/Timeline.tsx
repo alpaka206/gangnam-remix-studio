@@ -82,8 +82,8 @@ export function Timeline() {
             </p>
           </div>
           <p className="text-xs text-zinc-500">
-            Drag clips on the beat grid. Uploaded audio can be wired later from
-            /public/audio.
+            Drag clips on the beat grid. Uploaded audio, mock hits, and export
+            use the same mix engine.
           </p>
         </div>
 
