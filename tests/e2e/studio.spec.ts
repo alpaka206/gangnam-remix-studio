@@ -31,9 +31,13 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
     "Select a clip",
   );
 
+  const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export Mix" }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toMatch(/gangnam-remix-.*\.wav/);
   await expect(page.getByTestId("export-status")).toContainText(
-    "export preparing",
+    "export ready",
   );
 });
 

@@ -7,6 +7,7 @@ import { clampBpm, snapTimeToBeat } from "@/lib/timeline/time";
 import type {
   MainTrackState,
   PlaybackSpeed,
+  ExportStatus,
   SampleItem,
   StudioClip,
   StudioProjectState,
@@ -36,7 +37,8 @@ type StudioActions = {
   setPlayheadTime: (time: number) => void;
   setPlayback: (isPlaying: boolean) => void;
   saveProject: () => void;
-  startExport: () => void;
+  setExportStatus: (status: ExportStatus) => void;
+  setExportError: (message: string | null) => void;
   resetProject: () => void;
 };
 
@@ -61,6 +63,7 @@ export function createInitialStudioState(): StudioProjectState {
     playheadTime: 0,
     isPlaying: false,
     exportStatus: "idle",
+    exportError: null,
     lastSavedAt: null,
   };
 }
@@ -181,7 +184,8 @@ export const useStudioStore = create<StudioStore>()(
       setPlayback: (isPlaying) => set({ isPlaying }),
       saveProject: () =>
         set({ lastSavedAt: new Date().toISOString(), exportStatus: "idle" }),
-      startExport: () => set({ exportStatus: "preparing" }),
+      setExportStatus: (status) => set({ exportStatus: status }),
+      setExportError: (message) => set({ exportError: message }),
       resetProject: () => set(createInitialStudioState()),
     }),
     {
@@ -198,6 +202,7 @@ export const useStudioStore = create<StudioStore>()(
         playheadTime: state.playheadTime,
         isPlaying: false,
         exportStatus: "idle",
+        exportError: null,
         lastSavedAt: state.lastSavedAt,
       }),
       merge: (persistedState, currentState) => {
@@ -215,6 +220,7 @@ export const useStudioStore = create<StudioStore>()(
           selectedClipId: restored.selectedClipId ?? null,
           isPlaying: false,
           exportStatus: "idle",
+          exportError: null,
         };
       },
     },

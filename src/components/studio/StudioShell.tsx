@@ -5,14 +5,17 @@ import { SampleLibrary } from "@/components/studio/SampleLibrary";
 import { Timeline } from "@/components/studio/Timeline";
 import { TrackList } from "@/components/studio/TrackList";
 import { TransportBar } from "@/components/studio/TransportBar";
+import { useMixExport } from "@/lib/audio/useMixExport";
 import { useStudioPlayback } from "@/lib/audio/useStudioPlayback";
 
 export function StudioShell() {
   const { stopPlayback, togglePlayback } = useStudioPlayback();
+  const exportMix = useMixExport();
 
   return (
     <main className="flex min-h-screen flex-col bg-[#111315] text-zinc-100">
       <TransportBar
+        onExportMix={exportMix}
         onStopPlayback={stopPlayback}
         onTogglePlayback={togglePlayback}
       />

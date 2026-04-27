@@ -4,7 +4,7 @@ export type PlaybackSpeed = 0.75 | 1 | 1.25 | 1.5;
 
 export type SampleKind = "mock" | "uploaded";
 
-export type ExportStatus = "idle" | "preparing";
+export type ExportStatus = "idle" | "rendering" | "ready" | "error";
 
 export interface TrackDefinition {
   id: TrackId;
@@ -55,6 +55,7 @@ export interface StudioProjectState {
   playheadTime: number;
   isPlaying: boolean;
   exportStatus: ExportStatus;
+  exportError: string | null;
   lastSavedAt: string | null;
 }
 

@@ -10,6 +10,7 @@ import type { PlaybackSpeed } from "@/types/studio";
 type TransportBarProps = {
   onTogglePlayback: () => void;
   onStopPlayback: () => void;
+  onExportMix: () => void;
 };
 
 const speedOptions: PlaybackSpeed[] = [0.75, 1, 1.25, 1.5];
@@ -17,6 +18,7 @@ const speedOptions: PlaybackSpeed[] = [0.75, 1, 1.25, 1.5];
 export function TransportBar({
   onTogglePlayback,
   onStopPlayback,
+  onExportMix,
 }: TransportBarProps) {
   const bpm = useStudioStore((state) => state.bpm);
   const speed = useStudioStore((state) => state.speed);
@@ -24,12 +26,18 @@ export function TransportBar({
   const isPlaying = useStudioStore((state) => state.isPlaying);
   const playheadTime = useStudioStore((state) => state.playheadTime);
   const exportStatus = useStudioStore((state) => state.exportStatus);
+  const exportError = useStudioStore((state) => state.exportError);
   const lastSavedAt = useStudioStore((state) => state.lastSavedAt);
   const setBpm = useStudioStore((state) => state.setBpm);
   const setSpeed = useStudioStore((state) => state.setSpeed);
   const setSnapToBeat = useStudioStore((state) => state.setSnapToBeat);
   const saveProject = useStudioStore((state) => state.saveProject);
-  const startExport = useStudioStore((state) => state.startExport);
+  const exportLabel =
+    exportStatus === "rendering"
+      ? "Rendering..."
+      : exportStatus === "ready"
+        ? "Exported"
+        : "Export Mix";
 
   return (
     <header className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-zinc-100">
@@ -105,29 +113,37 @@ export function TransportBar({
             Saved {new Date(lastSavedAt).toLocaleTimeString()}
           </span>
         ) : null}
-        {exportStatus === "preparing" ? (
+        {exportStatus !== "idle" ? (
           <span
-            className="font-mono text-xs text-amber-200"
+            className={`font-mono text-xs ${
+              exportStatus === "error" ? "text-rose-300" : "text-amber-200"
+            }`}
             data-testid="export-status"
+            title={exportError ?? undefined}
           >
-            export preparing
+            {exportStatus === "rendering"
+              ? "rendering wav"
+              : exportStatus === "ready"
+                ? "export ready"
+                : "export failed"}
           </span>
         ) : null}
         <Button onClick={saveProject} icon={<Save size={15} />}>
           Save
         </Button>
         <Button
-          onClick={startExport}
+          onClick={onExportMix}
           variant="primary"
+          disabled={exportStatus === "rendering"}
           icon={
-            exportStatus === "preparing" ? (
+            exportStatus === "rendering" ? (
               <Zap size={15} />
             ) : (
               <Download size={15} />
             )
           }
         >
-          Export Mix
+          {exportLabel}
         </Button>
       </div>
     </header>
