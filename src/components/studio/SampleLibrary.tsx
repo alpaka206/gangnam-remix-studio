@@ -75,8 +75,7 @@ export function SampleLibrary() {
       <div className="flex gap-3 overflow-x-auto px-4 py-4">
         {samples.length === 0 ? (
           <div className="flex min-h-24 min-w-72 items-center rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-4 text-sm text-zinc-500">
-            Only op.mp3 is loaded. Upload another meme sound to add more
-            sources.
+            No sounds loaded. Upload a meme sound to add it to the timeline.
           </div>
         ) : null}
         {samples.map((sample) => (

@@ -22,6 +22,13 @@ export function usePersistedAudioAssets() {
   const updateSampleDuration = useStudioStore(
     (state) => state.updateSampleDuration,
   );
+  const purgeBundledSampleState = useStudioStore(
+    (state) => state.purgeBundledSampleState,
+  );
+
+  useEffect(() => {
+    purgeBundledSampleState();
+  }, [purgeBundledSampleState]);
 
   useEffect(() => {
     if (

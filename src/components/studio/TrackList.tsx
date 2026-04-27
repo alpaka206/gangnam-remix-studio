@@ -90,6 +90,11 @@ export function TrackList() {
           <p className="font-mono text-[11px] text-zinc-600">click / drag</p>
         </div>
         <div className="space-y-1">
+          {samples.length === 0 ? (
+            <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-3 py-3 text-sm text-zinc-500">
+              Upload a sound below to place it here.
+            </div>
+          ) : null}
           {samples.map((sample) => (
             <button
               key={sample.id}

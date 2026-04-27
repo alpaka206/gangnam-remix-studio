@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import {
   BUNDLED_SAMPLE_AUDIO_FILE_NAME,
   BUNDLED_SAMPLE_AUDIO_URL,
+  DEFAULT_BUNDLED_SAMPLE_ID,
   defaultMainTrack,
   initialSamples,
 } from "@/data/studioData";
@@ -29,6 +30,7 @@ type StudioActions = {
   addUploadedSamples: (samples: UploadedSampleInput[]) => void;
   restoreSampleAsset: (sampleId: string, objectUrl: string) => void;
   updateSampleDuration: (sampleId: string, duration: number) => void;
+  purgeBundledSampleState: () => void;
   selectSample: (sampleId: string | null) => void;
   addSampleClip: (
     sampleId: string,
@@ -140,6 +142,24 @@ export const useStudioStore = create<StudioStore>()(
             }),
           };
         }),
+      purgeBundledSampleState: () =>
+        set((state) => ({
+          samples: state.samples.filter(
+            (sample) => sample.id !== DEFAULT_BUNDLED_SAMPLE_ID,
+          ),
+          clips: state.clips.filter(
+            (clip) => clip.sampleId !== DEFAULT_BUNDLED_SAMPLE_ID,
+          ),
+          selectedSampleId:
+            state.selectedSampleId === DEFAULT_BUNDLED_SAMPLE_ID
+              ? null
+              : state.selectedSampleId,
+          selectedClipId:
+            state.clips.find((clip) => clip.id === state.selectedClipId)
+              ?.sampleId === DEFAULT_BUNDLED_SAMPLE_ID
+              ? null
+              : state.selectedClipId,
+        })),
       selectSample: (sampleId) =>
         set({ selectedSampleId: sampleId, selectedClipId: null }),
       addSampleClip: (sampleId, options) => {
@@ -268,8 +288,12 @@ export const useStudioStore = create<StudioStore>()(
         speed: state.speed,
         snapToBeat: state.snapToBeat,
         mainTrack: sanitizeMainTrackForStorage(state.mainTrack),
-        clips: state.clips,
-        samples: state.samples.map(sanitizeSampleForStorage),
+        clips: state.clips.filter(
+          (clip) => clip.sampleId !== DEFAULT_BUNDLED_SAMPLE_ID,
+        ),
+        samples: state.samples
+          .filter((sample) => sample.id !== DEFAULT_BUNDLED_SAMPLE_ID)
+          .map(sanitizeSampleForStorage),
         selectedClipId: state.selectedClipId,
         selectedSampleId: state.selectedSampleId,
         playheadTime: state.playheadTime,
@@ -291,7 +315,10 @@ export const useStudioStore = create<StudioStore>()(
           snapToBeat: restored.snapToBeat ?? currentState.snapToBeat,
           mainTrack: restoreMainTrack(restored.mainTrack),
           samples: [...cloneSamples(initialSamples), ...uploadedSamples],
-          clips: filterUploadedClips(restored.clips ?? currentState.clips),
+          clips: filterRestoredClips(
+            restored.clips ?? currentState.clips,
+            uploadedSamples,
+          ),
           selectedClipId: restored.selectedClipId ?? null,
           selectedSampleId: restored.selectedSampleId ?? null,
           playheadTime: restored.playheadTime ?? currentState.playheadTime,
@@ -356,11 +383,15 @@ function isBundledSampleTrack(track: MainTrackState) {
   );
 }
 
-function filterUploadedClips(clips: StudioClip[]) {
+function filterRestoredClips(clips: StudioClip[], samples: SampleItem[]) {
+  const sampleIds = new Set(samples.map((sample) => sample.id));
+
   return clips
     .filter(
       (clip) => clip.sourceKind === "uploaded" || clip.sourceKind === "bundled",
     )
+    .filter((clip) => clip.sampleId !== DEFAULT_BUNDLED_SAMPLE_ID)
+    .filter((clip) => (clip.sampleId ? sampleIds.has(clip.sampleId) : false))
     .map((clip) => ({ ...clip, trackId: "clips" as const }));
 }
 

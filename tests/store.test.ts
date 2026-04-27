@@ -8,17 +8,12 @@ describe("studio store", () => {
     useStudioStore.getState().resetProject();
   });
 
-  it("starts with op.mp3 as the only bundled audio source", () => {
+  it("starts with no main music and no preloaded sounds", () => {
     const state = useStudioStore.getState();
 
     expect(state.mainTrack.fileName).toBeNull();
     expect(state.mainTrack.objectUrl).toBeNull();
-    expect(state.samples).toHaveLength(1);
-    expect(state.samples[0]).toMatchObject({
-      fileName: "op.mp3",
-      kind: "bundled",
-      objectUrl: "/op.mp3",
-    });
+    expect(state.samples).toHaveLength(0);
     expect(state.clips).toHaveLength(0);
   });
 
@@ -37,24 +32,43 @@ describe("studio store", () => {
     expect(state.mainTrack.status).toBe("empty");
   });
 
-  it("can add the bundled op.mp3 source repeatedly", () => {
-    const firstClipId = useStudioStore.getState().addSampleClip("bundled-op");
-    const secondClipId = useStudioStore
-      .getState()
-      .addSampleClip("bundled-op", { start: 2 });
+  it("does not add bundled sounds unless the user uploads a source", () => {
+    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
 
     const state = useStudioStore.getState();
 
-    expect(firstClipId).toBeTruthy();
-    expect(secondClipId).toBeTruthy();
-    expect(state.clips).toHaveLength(2);
-    expect(state.clips.map((clip) => clip.sampleId)).toEqual([
-      "bundled-op",
-      "bundled-op",
+    expect(clipId).toBeNull();
+    expect(state.clips).toHaveLength(0);
+  });
+
+  it("purges bundled op.mp3 state left by older versions", () => {
+    useStudioStore.getState().addUploadedSamples([
+      {
+        id: "bundled-op",
+        name: "op",
+        fileName: "op.mp3",
+        duration: 1,
+        objectUrl: "/op.mp3",
+      },
     ]);
+    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
+
+    expect(clipId).toBeTruthy();
+
+    useStudioStore.getState().purgeBundledSampleState();
+
+    const state = useStudioStore.getState();
+
+    expect(state.samples.some((sample) => sample.id === "bundled-op")).toBe(
+      false,
+    );
+    expect(state.clips.some((clip) => clip.sampleId === "bundled-op")).toBe(
+      false,
+    );
   });
 
   it("does not use the main music length as a fallback for sound blocks", () => {
+    addUploadedSample();
     useStudioStore.getState().setMainTrack({
       fileName: "main.wav",
       objectUrl: "blob:main",
@@ -62,7 +76,7 @@ describe("studio store", () => {
       status: "ready",
     });
 
-    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-meme");
     const clip = useStudioStore
       .getState()
       .clips.find((item) => item.id === clipId);
@@ -71,9 +85,19 @@ describe("studio store", () => {
   });
 
   it("resizes existing sound blocks when late audio duration metadata arrives", () => {
-    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
+    useStudioStore.getState().addUploadedSamples([
+      {
+        id: "pending-meme",
+        name: "Pending Meme",
+        fileName: "pending-meme.wav",
+        duration: 0,
+        objectUrl: "blob:pending",
+      },
+    ]);
 
-    useStudioStore.getState().updateSampleDuration("bundled-op", 4.2);
+    const clipId = useStudioStore.getState().addSampleClip("pending-meme");
+
+    useStudioStore.getState().updateSampleDuration("pending-meme", 4.2);
 
     const clip = useStudioStore
       .getState()
@@ -150,7 +174,9 @@ describe("studio store", () => {
   });
 
   it("duplicates a selected clip at a requested position", () => {
-    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
+    addUploadedSample();
+
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-meme");
     const duplicatedClipId = useStudioStore
       .getState()
       .duplicateClip(clipId!, { start: 3 });
@@ -159,14 +185,16 @@ describe("studio store", () => {
       .getState()
       .clips.find((clip) => clip.id === duplicatedClipId);
 
-    expect(duplicatedClip?.sampleId).toBe("bundled-op");
+    expect(duplicatedClip?.sampleId).toBe("uploaded-meme");
     expect(duplicatedClip?.start).toBeGreaterThanOrEqual(0);
   });
 
   it("can place a sound at an unsnapped timeline position", () => {
+    addUploadedSample();
+
     const clipId = useStudioStore
       .getState()
-      .addSampleClip("bundled-op", { start: 1.37, snap: false });
+      .addSampleClip("uploaded-meme", { start: 1.37, snap: false });
 
     const clip = useStudioStore
       .getState()
