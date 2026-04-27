@@ -1,8 +1,4 @@
-import type {
-  MainTrackState,
-  SampleItem,
-  TrackDefinition,
-} from "@/types/studio";
+import type { MainTrackState, SampleItem } from "@/types/studio";
 
 export const DEFAULT_MAIN_AUDIO_URL = "/op.mp3";
 export const DEFAULT_MAIN_AUDIO_FILE_NAME = "op.mp3";
@@ -16,21 +12,12 @@ export const defaultMainTrack: MainTrackState = {
 
 export const DEFAULT_BUNDLED_SAMPLE_ID = "bundled-op";
 
-export const trackDefinitions: TrackDefinition[] = [
-  { id: "main", name: "Main Music", color: "#9ca3af" },
-  { id: "drums", name: "Drums", color: "#f59e0b" },
-  { id: "bass", name: "Bass", color: "#14b8a6" },
-  { id: "synth", name: "Synth", color: "#60a5fa" },
-  { id: "brass", name: "Brass", color: "#f97316" },
-  { id: "sfx", name: "SFX", color: "#e879f9" },
-];
-
 export const initialSamples: SampleItem[] = [
   {
     id: DEFAULT_BUNDLED_SAMPLE_ID,
     name: "op",
     kind: "bundled",
-    trackId: "sfx",
+    trackId: "clips",
     duration: 0,
     color: "#e879f9",
     fileName: DEFAULT_MAIN_AUDIO_FILE_NAME,

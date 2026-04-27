@@ -1,9 +1,8 @@
 "use client";
 
-import { Music, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { useState } from "react";
 
-import { trackDefinitions } from "@/data/studioData";
 import { MAIN_AUDIO_ASSET_ID, registerAudioAsset } from "@/lib/audio/assets";
 import {
   createAudioObjectUrl,
@@ -14,16 +13,13 @@ import { savePersistentAudioAsset } from "@/lib/audio/persistentAssets";
 import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
-import type { ClipTrackId } from "@/types/studio";
 
 export function TrackList() {
   const [error, setError] = useState<string | null>(null);
   const mainTrack = useStudioStore((state) => state.mainTrack);
   const samples = useStudioStore((state) => state.samples);
   const selectedSampleId = useStudioStore((state) => state.selectedSampleId);
-  const targetTrackId = useStudioStore((state) => state.targetTrackId);
   const setMainTrack = useStudioStore((state) => state.setMainTrack);
-  const setTargetTrack = useStudioStore((state) => state.setTargetTrack);
   const selectSample = useStudioStore((state) => state.selectSample);
   const addSampleClip = useStudioStore((state) => state.addSampleClip);
 
@@ -54,7 +50,7 @@ export function TrackList() {
   return (
     <aside className="flex h-full min-h-0 flex-col border-r border-zinc-800 bg-zinc-950">
       <div className="border-b border-zinc-800 px-4 py-3">
-        <p className="text-xs font-semibold uppercase text-zinc-500">Tracks</p>
+        <p className="text-xs font-semibold uppercase text-zinc-500">Sources</p>
       </div>
 
       <div className="border-b border-zinc-800 px-3 py-3">
@@ -88,11 +84,9 @@ export function TrackList() {
       <div className="border-b border-zinc-800 px-3 py-3">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-xs font-semibold uppercase text-zinc-500">
-            Audio Sources
+            Meme Sounds
           </p>
-          <p className="font-mono text-[11px] text-zinc-600">
-            to {targetTrackId.toUpperCase()}
-          </p>
+          <p className="font-mono text-[11px] text-zinc-600">click to add</p>
         </div>
         <div className="space-y-1">
           {samples.map((sample) => (
@@ -127,36 +121,6 @@ export function TrackList() {
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto py-2">
-        {trackDefinitions.map((track) => (
-          <button
-            key={track.id}
-            type="button"
-            disabled={track.id === "main"}
-            className={cn(
-              "mx-2 mb-1 flex h-12 w-[calc(100%-1rem)] items-center gap-3 rounded-md border px-3 text-left text-sm transition",
-              track.id === "main"
-                ? "cursor-default border-transparent bg-zinc-900 text-zinc-400"
-                : targetTrackId === track.id
-                  ? "border-amber-300/70 bg-zinc-900 text-zinc-50"
-                  : "border-transparent bg-zinc-950 text-zinc-200 hover:border-zinc-700",
-            )}
-            onClick={() => {
-              if (track.id !== "main") {
-                setTargetTrack(track.id as ClipTrackId);
-              }
-            }}
-          >
-            <span
-              className="h-3 w-3 rounded-sm"
-              style={{ backgroundColor: track.color }}
-            />
-            <Music size={15} className="text-zinc-500" />
-            <span>{track.name}</span>
-          </button>
-        ))}
       </div>
     </aside>
   );

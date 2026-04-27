@@ -42,7 +42,7 @@ describe("studio store", () => {
   it("adds a sample clip and selects it", () => {
     addUploadedSample();
 
-    const clipId = useStudioStore.getState().addSampleClip("uploaded-sfx");
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-meme");
     const state = useStudioStore.getState();
 
     expect(clipId).toBeTruthy();
@@ -53,7 +53,7 @@ describe("studio store", () => {
   it("moves, updates, and deletes clips", () => {
     addUploadedSample();
 
-    const clipId = useStudioStore.getState().addSampleClip("uploaded-sfx");
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-meme");
 
     expect(clipId).toBeTruthy();
 
@@ -78,7 +78,7 @@ describe("studio store", () => {
   it("persists bpm, speed, and clips in localStorage", () => {
     addUploadedSample();
 
-    const clipId = useStudioStore.getState().addSampleClip("uploaded-sfx");
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-meme");
 
     useStudioStore.getState().setBpm(128);
     useStudioStore.getState().setSpeed(1.25);
@@ -109,9 +109,9 @@ describe("studio store", () => {
 function addUploadedSample() {
   useStudioStore.getState().addUploadedSamples([
     {
-      id: "uploaded-sfx",
-      name: "Uploaded SFX",
-      fileName: "uploaded-sfx.wav",
+      id: "uploaded-meme",
+      name: "Uploaded Meme",
+      fileName: "uploaded-meme.wav",
       duration: 1,
       objectUrl: "blob:test",
     },

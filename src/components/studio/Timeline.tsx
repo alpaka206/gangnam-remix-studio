@@ -11,7 +11,6 @@ import {
 } from "react";
 
 import { MainWaveform } from "@/components/studio/MainWaveform";
-import { trackDefinitions } from "@/data/studioData";
 import { cn } from "@/lib/cn";
 import {
   DEFAULT_PIXELS_PER_SECOND,
@@ -21,7 +20,7 @@ import {
   secondsToPixels,
 } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
-import type { ClipTrackId, StudioClip } from "@/types/studio";
+import type { StudioClip } from "@/types/studio";
 
 type DragState = {
   clipId: string;
@@ -44,14 +43,12 @@ export function Timeline() {
   const samples = useStudioStore((state) => state.samples);
   const selectedClipId = useStudioStore((state) => state.selectedClipId);
   const selectedSampleId = useStudioStore((state) => state.selectedSampleId);
-  const targetTrackId = useStudioStore((state) => state.targetTrackId);
   const playheadTime = useStudioStore((state) => state.playheadTime);
   const mainTrack = useStudioStore((state) => state.mainTrack);
   const selectClip = useStudioStore((state) => state.selectClip);
   const moveClip = useStudioStore((state) => state.moveClip);
   const addSampleClip = useStudioStore((state) => state.addSampleClip);
   const duplicateClip = useStudioStore((state) => state.duplicateClip);
-  const setTargetTrack = useStudioStore((state) => state.setTargetTrack);
 
   const timelineDuration = useMemo(
     () =>
@@ -139,11 +136,8 @@ export function Timeline() {
           playheadTime;
         const clipId =
           clipboard.kind === "clip"
-            ? duplicateClip(clipboard.clipId, { start, trackId: targetTrackId })
-            : addSampleClip(clipboard.sampleId, {
-                start,
-                trackId: targetTrackId,
-              });
+            ? duplicateClip(clipboard.clipId, { start })
+            : addSampleClip(clipboard.sampleId, { start });
 
         if (clipId) {
           nextPasteTimeRef.current = start + clipboard.duration;
@@ -166,7 +160,6 @@ export function Timeline() {
     samples,
     selectedClipId,
     selectedSampleId,
-    targetTrackId,
   ]);
 
   function updatePointerTime(event: ReactPointerEvent<HTMLDivElement>) {
@@ -194,8 +187,8 @@ export function Timeline() {
             </p>
           </div>
           <p className="text-xs text-zinc-500">
-            op.mp3 is the only bundled audio. Uploaded clips and export use the
-            same mix engine.
+            Click a meme sound to place it. Ctrl+C / Ctrl+V repeats clips from
+            the mouse position.
           </p>
         </div>
 
@@ -220,54 +213,44 @@ export function Timeline() {
               <MainWaveform className="absolute inset-x-2 inset-y-2" />
             </div>
 
-            {trackDefinitions
-              .filter((track) => track.id !== "main")
-              .map((track) => (
-                <div
-                  key={track.id}
-                  className="relative h-16 border-b border-zinc-800 bg-zinc-950"
-                  style={rowGridStyle}
-                  onPointerMove={() => setTargetTrack(track.id as ClipTrackId)}
-                >
-                  {clips
-                    .filter((clip) => clip.trackId === track.id)
-                    .map((clip) => (
-                      <TimelineClip
-                        key={clip.id}
-                        clip={clip}
-                        isDragging={dragState?.clipId === clip.id}
-                        isSelected={selectedClipId === clip.id}
-                        onPointerDown={(event) => {
-                          event.stopPropagation();
-                          event.currentTarget.setPointerCapture(
-                            event.pointerId,
-                          );
-                          selectClip(clip.id);
-                          setDragState({
-                            clipId: clip.id,
-                            startClientX: event.clientX,
-                            initialStart: clip.start,
-                          });
-                        }}
-                        onPointerMove={(event) => {
-                          if (dragState?.clipId !== clip.id) {
-                            return;
-                          }
+            <div
+              className="relative h-20 border-b border-zinc-800 bg-zinc-950"
+              style={rowGridStyle}
+            >
+              <span className="pointer-events-none absolute left-3 top-2 z-10 rounded-sm bg-zinc-950/80 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                Meme Clips
+              </span>
+              {clips.map((clip) => (
+                <TimelineClip
+                  key={clip.id}
+                  clip={clip}
+                  isDragging={dragState?.clipId === clip.id}
+                  isSelected={selectedClipId === clip.id}
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    selectClip(clip.id);
+                    setDragState({
+                      clipId: clip.id,
+                      startClientX: event.clientX,
+                      initialStart: clip.start,
+                    });
+                  }}
+                  onPointerMove={(event) => {
+                    if (dragState?.clipId !== clip.id) {
+                      return;
+                    }
 
-                          const deltaSeconds =
-                            (event.clientX - dragState.startClientX) /
-                            DEFAULT_PIXELS_PER_SECOND;
-                          moveClip(
-                            clip.id,
-                            dragState.initialStart + deltaSeconds,
-                          );
-                        }}
-                        onPointerUp={() => setDragState(null)}
-                        onSelect={() => selectClip(clip.id)}
-                      />
-                    ))}
-                </div>
+                    const deltaSeconds =
+                      (event.clientX - dragState.startClientX) /
+                      DEFAULT_PIXELS_PER_SECOND;
+                    moveClip(clip.id, dragState.initialStart + deltaSeconds);
+                  }}
+                  onPointerUp={() => setDragState(null)}
+                  onSelect={() => selectClip(clip.id)}
+                />
               ))}
+            </div>
 
             <div
               className="pointer-events-none absolute top-10 bottom-0 z-20 w-px bg-amber-200 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]"
@@ -368,7 +351,7 @@ function TimelineClip({
     >
       <span className="block truncate font-semibold">{clip.name}</span>
       <span className="mt-1 block truncate font-mono text-[11px] opacity-75">
-        {clip.start.toFixed(2)}s · {Math.round(clip.volume * 100)}%
+        {clip.start.toFixed(2)}s / {Math.round(clip.volume * 100)}%
       </span>
     </button>
   );

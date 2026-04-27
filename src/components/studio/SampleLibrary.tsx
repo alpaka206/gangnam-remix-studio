@@ -68,19 +68,18 @@ export function SampleLibrary() {
       <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
         <div>
           <p className="text-xs font-semibold uppercase text-zinc-500">
-            Sample Library
+            Meme Sound Library
           </p>
           <p className="text-xs text-zinc-500">
-            No bundled sample data. Upload SFX or stems when you need extra
-            clips.
+            Upload short meme sounds or reuse op.mp3 as many times as needed.
           </p>
         </div>
         <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-100 transition hover:border-amber-300">
           <Upload size={15} />
-          Upload SFX / Stem
+          Upload Meme Sound
           <input
-            data-testid="sfx-upload"
-            aria-label="Upload effect sounds"
+            data-testid="meme-upload"
+            aria-label="Upload meme sounds"
             className="sr-only"
             multiple
             type="file"
@@ -97,7 +96,8 @@ export function SampleLibrary() {
       <div className="flex gap-3 overflow-x-auto px-4 py-4">
         {samples.length === 0 ? (
           <div className="flex min-h-24 min-w-72 items-center rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-4 text-sm text-zinc-500">
-            Only op.mp3 is loaded. Upload an SFX or stem file to add clips.
+            Only op.mp3 is loaded. Upload another meme sound to add more
+            sources.
           </div>
         ) : null}
         {samples.map((sample) => (
@@ -128,7 +128,7 @@ export function SampleLibrary() {
                 style={{ backgroundColor: sample.color }}
               />
               <span className="font-mono text-xs text-zinc-500">
-                {sample.trackId.toUpperCase()} · {formatTime(sample.duration)}
+                Meme sound / {formatTime(sample.duration)}
               </span>
             </span>
             <span className="mt-2 text-xs text-zinc-500">

@@ -34,7 +34,7 @@ export function ClipInspector() {
               {clip.name}
             </h2>
             <p className="mt-1 font-mono text-xs text-zinc-500">
-              {clip.trackId.toUpperCase()} · {formatBarsBeats(clip.start, bpm)}
+              Meme sound / {formatBarsBeats(clip.start, bpm)}
             </p>
           </div>
 

@@ -1,9 +1,9 @@
 import { MAIN_AUDIO_ASSET_ID, getAudioAssetFile } from "@/lib/audio/assets";
 import type {
+  ClipTrackId,
   MainTrackState,
   SampleItem,
   StudioClip,
-  TrackId,
 } from "@/types/studio";
 
 export type ScheduledMix = {
@@ -18,13 +18,9 @@ export type MixRenderData = {
   speed: number;
 };
 
-const trackGain: Record<TrackId, number> = {
-  main: 0.9,
-  drums: 0.92,
-  bass: 0.86,
-  synth: 0.78,
-  brass: 0.82,
-  sfx: 0.85,
+const mainGain = 0.9;
+const trackGain: Record<ClipTrackId, number> = {
+  clips: 0.85,
 };
 
 export async function scheduleMixPlayback({
@@ -90,7 +86,7 @@ export async function scheduleMix({
       context,
       destination,
       buffer: mainBuffer,
-      gainValue: trackGain.main,
+      gainValue: mainGain,
       playbackRate: speed,
     });
     const remainingTimelineDuration = Math.min(
