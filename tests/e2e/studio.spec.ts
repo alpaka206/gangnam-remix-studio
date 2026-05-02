@@ -7,22 +7,21 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
     page.getByRole("heading", { name: "Gangnam Remix Studio" }),
   ).toBeVisible();
   await expect(page.getByText("Upload Main", { exact: true })).toBeVisible();
-  await expect(page.getByText("Upload Meme Sound")).toBeVisible();
+  await expect(page.getByText("Upload Meme Sound")).toHaveCount(0);
   await expect(page.getByText("No main music loaded")).toBeVisible();
-  await expect(page.getByLabel("Add op from left sources")).toBeVisible();
+  await expect(page.getByText("Meme Sounds")).toHaveCount(0);
+  await expect(page.getByTestId("effect-lane")).toHaveCount(16);
+  await expect(page.getByLabel("Add 옵 to timeline")).toBeVisible();
+  await expect(page.getByLabel("Launchpad pitch")).toBeVisible();
+  await expect(page.getByLabel("Launchpad speed")).toBeVisible();
   await expect(page.getByTestId("timeline-clip")).toHaveCount(0);
 
-  await page.getByLabel("Add op from left sources").click();
-  await expect(page.getByTestId("clip-inspector")).toContainText("op");
+  await page.getByLabel("Add 옵 to timeline").click();
+  await expect(page.getByTestId("clip-inspector")).toContainText("옵");
   await expect(page.getByTestId("timeline-clip")).toHaveCount(1);
 
-  await page.getByLabel("Upload meme sounds").setInputFiles({
-    name: "test-meme.wav",
-    mimeType: "audio/wav",
-    buffer: createTestWav(),
-  });
-  await page.getByLabel("Add test-meme to timeline").click();
-  await expect(page.getByTestId("clip-inspector")).toContainText("test-meme");
+  await page.keyboard.press("2");
+  await expect(page.getByTestId("clip-inspector")).toContainText("여짜");
   await expect(page.getByTestId("timeline-clip")).toHaveCount(2);
 
   const timelineBox = await page.getByTestId("timeline").boundingBox();
@@ -46,12 +45,12 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
     .not.toBe("0:00.00");
   await page.getByRole("button", { name: "Stop" }).click();
 
-  await page.getByLabel("Add test-meme to timeline").click();
-  await expect(page.getByTestId("clip-inspector")).toContainText("test-meme");
+  await page.getByLabel("Add 강남 to timeline").click();
+  await expect(page.getByTestId("clip-inspector")).toContainText("강남");
   await expect(page.getByTestId("timeline-clip")).toHaveCount(5);
 
   await page
-    .getByLabel("Add test-meme from left sources")
+    .getByLabel("Add 강남 to timeline")
     .dragTo(page.getByTestId("timeline"), {
       targetPosition: { x: 420, y: 120 },
     });
@@ -63,6 +62,7 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
   await page.getByTestId("timeline").dispatchEvent("wheel", {
     bubbles: true,
     cancelable: true,
+    ctrlKey: true,
     clientX: 480,
     deltaY: -700,
   });
@@ -85,7 +85,7 @@ test("studio editor supports the core remix workflow", async ({ page }) => {
 
   await expect(page.getByLabel("BPM")).toHaveValue("128");
   await expect(page.getByLabel("Speed")).toHaveValue("1.25");
-  await expect(page.getByText("test-meme").first()).toBeVisible();
+  await expect(page.getByTestId("timeline-clip")).toHaveCount(6);
   await expect(page.getByText("test-main.wav")).toBeVisible();
 
   await page.getByTestId("timeline-clip").last().click();

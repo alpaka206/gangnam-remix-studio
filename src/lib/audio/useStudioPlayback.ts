@@ -176,6 +176,7 @@ export function useStudioPlayback() {
   }, [setPlayback, setPlayheadTime, stopScheduledMix]);
 
   return {
+    startPlayback,
     togglePlayback,
     stopPlayback,
   };

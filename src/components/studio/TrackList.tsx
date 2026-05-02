@@ -15,14 +15,16 @@ import { setSampleDragData } from "@/lib/timeline/drag";
 import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
 
-export function TrackList() {
+type TrackListProps = {
+  onTriggerSample: (sampleId: string) => void;
+};
+
+export function TrackList({ onTriggerSample }: TrackListProps) {
   const [error, setError] = useState<string | null>(null);
   const mainTrack = useStudioStore((state) => state.mainTrack);
   const samples = useStudioStore((state) => state.samples);
   const selectedSampleId = useStudioStore((state) => state.selectedSampleId);
   const setMainTrack = useStudioStore((state) => state.setMainTrack);
-  const selectSample = useStudioStore((state) => state.selectSample);
-  const addSampleClip = useStudioStore((state) => state.addSampleClip);
 
   async function handleMainUpload(file: File | undefined) {
     if (!file) {
@@ -82,14 +84,14 @@ export function TrackList() {
         {error ? <p className="mt-2 text-xs text-rose-300">{error}</p> : null}
       </div>
 
-      <div className="border-b border-zinc-800 px-3 py-3">
+      <div className="min-h-0 flex-1 overflow-hidden border-b border-zinc-800 px-3 py-3">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-xs font-semibold uppercase text-zinc-500">
             Meme Sounds
           </p>
           <p className="font-mono text-[11px] text-zinc-600">click / drag</p>
         </div>
-        <div className="space-y-1">
+        <div className="studio-scrollbar h-[calc(100%-1.5rem)] space-y-1 overflow-y-auto pr-1">
           {samples.length === 0 ? (
             <div className="rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-3 py-3 text-sm text-zinc-500">
               Upload a sound below to place it here.
@@ -106,33 +108,26 @@ export function TrackList() {
                   : "border-zinc-800 bg-zinc-900/60 text-zinc-200 hover:border-zinc-600",
               )}
               data-testid="left-audio-source"
-              aria-label={`Add ${sample.name} from left sources`}
+              aria-label={`Add ${getSampleLabel(sample)} from left sources`}
               draggable
               onDragStart={(event) =>
                 setSampleDragData(event.dataTransfer, sample.id)
               }
-              onClick={() => {
-                selectSample(sample.id);
-                addSampleClip(sample.id);
-              }}
+              onClick={() => onTriggerSample(sample.id)}
             >
-              <span className="min-w-0">
+              <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">
-                  {sample.fileName ?? sample.name}
-                </span>
-                <span className="mt-0.5 block font-mono text-[11px] text-zinc-500">
-                  {sample.duration > 0 ? formatTime(sample.duration) : "audio"}
+                  {getSampleLabel(sample)}
                 </span>
               </span>
               <span
-                className="flex shrink-0 items-center gap-2 font-mono text-[11px] uppercase text-amber-200"
+                className="flex shrink-0 items-center gap-2"
                 aria-hidden="true"
               >
                 <span
                   className="h-2.5 w-2.5 rounded-sm"
                   style={{ backgroundColor: sample.color }}
                 />
-                Add
               </span>
             </button>
           ))}
@@ -140,4 +135,8 @@ export function TrackList() {
       </div>
     </aside>
   );
+}
+
+function getSampleLabel(sample: { name: string; fileName?: string }) {
+  return sample.name || "Sound";
 }

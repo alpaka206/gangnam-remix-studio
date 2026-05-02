@@ -131,6 +131,7 @@ export async function scheduleMix({
       bufferDuration: buffer.duration,
       clipDuration: clip.duration,
       isLooping: clip.loop,
+      clipPlaybackRate: clip.playbackRate,
       playedTimelineOffset,
       speed,
     });
@@ -155,21 +156,24 @@ export function getClipPlaybackTiming({
   bufferDuration,
   clipDuration,
   isLooping,
+  clipPlaybackRate,
   playedTimelineOffset,
   speed,
 }: {
   bufferDuration: number;
   clipDuration: number;
   isLooping: boolean;
+  clipPlaybackRate?: number;
   playedTimelineOffset: number;
   speed: number;
 }) {
   const safeSpeed = Math.max(0.1, speed);
   const safeBufferDuration = Math.max(0.01, bufferDuration);
+  const safeClipPlaybackRate = Math.max(0.1, clipPlaybackRate ?? 1);
 
   if (isLooping) {
     return {
-      playbackRate: safeSpeed,
+      playbackRate: safeSpeed * safeClipPlaybackRate,
       sourceOffset: Math.max(0, playedTimelineOffset) % safeBufferDuration,
     };
   }

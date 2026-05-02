@@ -51,6 +51,22 @@ describe("mix engine clip timing", () => {
     });
   });
 
+  it("applies clip playback rate to looping sounds", () => {
+    expect(
+      getClipPlaybackTiming({
+        bufferDuration: 2,
+        clipDuration: 8,
+        isLooping: true,
+        clipPlaybackRate: 1.5,
+        playedTimelineOffset: 0,
+        speed: 1.25,
+      }),
+    ).toMatchObject({
+      playbackRate: 1.875,
+      sourceOffset: 0,
+    });
+  });
+
   it("does not resolve stale persistent main audio when no main file is loaded", () => {
     expect(
       hasMainTrackAudio({

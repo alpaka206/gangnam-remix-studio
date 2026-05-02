@@ -2,8 +2,8 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import {
-  BUNDLED_SAMPLE_AUDIO_FILE_NAME,
-  BUNDLED_SAMPLE_AUDIO_URL,
+  BUNDLED_SAMPLE_AUDIO_FILE_NAMES,
+  BUNDLED_SAMPLE_AUDIO_URLS,
   STUDIO_PROJECT_VERSION,
   defaultMainTrack,
   initialSamples,
@@ -33,7 +33,12 @@ type StudioActions = {
   selectSample: (sampleId: string | null) => void;
   addSampleClip: (
     sampleId: string,
-    options?: { start?: number; snap?: boolean },
+    options?: {
+      start?: number;
+      snap?: boolean;
+      pitchSemitones?: number;
+      playbackRate?: number;
+    },
   ) => string | null;
   duplicateClip: (
     clipId: string,
@@ -43,6 +48,7 @@ type StudioActions = {
   moveClip: (clipId: string, start: number) => void;
   updateClip: (clipId: string, patch: Partial<StudioClip>) => void;
   deleteClip: (clipId: string) => void;
+  clearEffectClips: () => void;
   setPlayheadTime: (time: number) => void;
   setPlayback: (isPlaying: boolean) => void;
   saveProject: () => void;
@@ -132,12 +138,17 @@ export const useStudioStore = create<StudioStore>()(
                 return clip;
               }
 
+              const clipPlaybackRate = Math.max(0.1, clip.playbackRate ?? 1);
+              const previousClipDuration = previousDuration / clipPlaybackRate;
               const shouldFollowSourceDuration =
                 previousDuration <= 0 ||
-                Math.abs(clip.duration - previousDuration) < 0.01;
+                Math.abs(clip.duration - previousClipDuration) < 0.01;
 
               return shouldFollowSourceDuration
-                ? { ...clip, duration: Math.max(0.25, nextDuration) }
+                ? {
+                    ...clip,
+                    duration: Math.max(0.25, nextDuration / clipPlaybackRate),
+                  }
                 : clip;
             }),
           };
@@ -157,10 +168,11 @@ export const useStudioStore = create<StudioStore>()(
           state.bpm,
           options?.snap ?? state.snapToBeat,
         );
-        const duration = Math.max(0.25, sample.duration || 1);
+        const playbackRate = Math.max(0.1, options?.playbackRate ?? 1);
+        const duration = Math.max(0.25, (sample.duration || 1) / playbackRate);
         const clip: StudioClip = {
           id: createId("clip"),
-          name: sample.name,
+          name: sample.name || "Sound",
           trackId: sample.trackId,
           sampleId: sample.id,
           sourceKind: sample.kind,
@@ -168,6 +180,8 @@ export const useStudioStore = create<StudioStore>()(
           duration,
           volume: 0.86,
           loop: false,
+          pitchSemitones: options?.pitchSemitones ?? 0,
+          playbackRate,
           color: sample.color,
           fileName: sample.fileName,
         };
@@ -254,6 +268,15 @@ export const useStudioStore = create<StudioStore>()(
           selectedClipId:
             state.selectedClipId === clipId ? null : state.selectedClipId,
         })),
+      clearEffectClips: () =>
+        set({
+          clips: [],
+          selectedClipId: null,
+          selectedSampleId: null,
+          playheadTime: 0,
+          exportStatus: "idle",
+          exportError: null,
+        }),
       setPlayheadTime: (time) => set({ playheadTime: Math.max(0, time) }),
       setPlayback: (isPlaying) => set({ isPlaying }),
       saveProject: () =>
@@ -285,13 +308,7 @@ export const useStudioStore = create<StudioStore>()(
         const restored = persistedState as Partial<StudioProjectState>;
         const isLegacyProject =
           restored.projectVersion !== STUDIO_PROJECT_VERSION;
-        const uploadedSamples = (restored.samples ?? [])
-          .filter((sample) => sample.kind === "uploaded")
-          .map(sanitizeSampleForStorage);
-        const restoredSamples = [
-          ...cloneSamples(initialSamples),
-          ...uploadedSamples,
-        ];
+        const restoredSamples = cloneSamples(initialSamples);
         const restoredClips = isLegacyProject
           ? []
           : filterRestoredClips(
@@ -373,8 +390,10 @@ function normalizeMainTrack(track: MainTrackState): MainTrackState {
 
 function isBundledSampleTrack(track: MainTrackState) {
   return (
-    track.fileName === BUNDLED_SAMPLE_AUDIO_FILE_NAME ||
-    track.objectUrl === BUNDLED_SAMPLE_AUDIO_URL
+    (track.fileName
+      ? BUNDLED_SAMPLE_AUDIO_FILE_NAMES.has(track.fileName)
+      : false) ||
+    (track.objectUrl ? BUNDLED_SAMPLE_AUDIO_URLS.has(track.objectUrl) : false)
   );
 }
 

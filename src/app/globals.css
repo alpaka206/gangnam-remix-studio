@@ -5,6 +5,10 @@
   --foreground: #f4f4f5;
 }
 
+html {
+  overflow: hidden;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -16,10 +20,40 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  overflow: hidden;
 }
 
 button,
 input,
 select {
   font: inherit;
+}
+
+.studio-scrollbar {
+  scrollbar-color: rgba(251, 191, 36, 0.55) rgba(39, 39, 42, 0.55);
+  scrollbar-width: thin;
+}
+
+.studio-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.studio-scrollbar::-webkit-scrollbar-track {
+  background: rgba(24, 24, 27, 0.9);
+  border-radius: 999px;
+}
+
+.studio-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #f59e0b, #fde68a);
+  border: 2px solid rgba(24, 24, 27, 0.9);
+  border-radius: 999px;
+}
+
+.studio-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #fbbf24, #fef3c7);
+}
+
+.studio-scrollbar::-webkit-scrollbar-corner {
+  background: rgba(24, 24, 27, 0.9);
 }

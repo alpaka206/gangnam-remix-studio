@@ -8,25 +8,32 @@ describe("studio store", () => {
     useStudioStore.getState().resetProject();
   });
 
-  it("starts with op.mp3 as an available effect source but no placed sounds", () => {
+  it("starts with the bundled effect sources but no placed sounds", () => {
     const state = useStudioStore.getState();
 
     expect(state.mainTrack.fileName).toBeNull();
     expect(state.mainTrack.objectUrl).toBeNull();
-    expect(state.samples).toHaveLength(1);
+    expect(state.samples).toHaveLength(16);
     expect(state.samples[0]).toMatchObject({
-      id: "bundled-op",
-      fileName: "op.mp3",
+      id: "bundled-1",
+      name: "옵",
+      fileName: "1.mp3",
       kind: "bundled",
-      objectUrl: "/op.mp3",
+      objectUrl: "/1.mp3",
+    });
+    expect(state.samples[15]).toMatchObject({
+      id: "bundled-16",
+      name: "오빠달린다",
+      fileName: "16.mp3",
+      objectUrl: "/16.mp3",
     });
     expect(state.clips).toHaveLength(0);
   });
 
-  it("does not allow the bundled op.mp3 sound to become the main track", () => {
+  it("does not allow a bundled effect sound to become the main track", () => {
     useStudioStore.getState().setMainTrack({
-      fileName: "op.mp3",
-      objectUrl: "/op.mp3",
+      fileName: "1.mp3",
+      objectUrl: "/1.mp3",
       duration: 10,
       status: "ready",
     });
@@ -38,15 +45,16 @@ describe("studio store", () => {
     expect(state.mainTrack.status).toBe("empty");
   });
 
-  it("can add the bundled op.mp3 effect only when the user chooses it", () => {
-    const clipId = useStudioStore.getState().addSampleClip("bundled-op");
+  it("can add a bundled effect only when the user chooses it", () => {
+    const clipId = useStudioStore.getState().addSampleClip("bundled-1");
 
     expect(clipId).toBeTruthy();
 
     const state = useStudioStore.getState();
 
     expect(state.clips).toHaveLength(1);
-    expect(state.clips[0]?.sampleId).toBe("bundled-op");
+    expect(state.clips[0]?.sampleId).toBe("bundled-1");
+    expect(state.clips[0]?.name).toBe("옵");
   });
 
   it("does not use the main music length as a fallback for sound blocks", () => {
@@ -86,6 +94,31 @@ describe("studio store", () => {
       .clips.find((item) => item.id === clipId);
 
     expect(clip?.duration).toBe(4.2);
+  });
+
+  it("keeps launchpad playback rate when late duration metadata arrives", () => {
+    useStudioStore.getState().addUploadedSamples([
+      {
+        id: "pending-meme",
+        name: "Pending Meme",
+        fileName: "pending-meme.wav",
+        duration: 0,
+        objectUrl: "blob:pending",
+      },
+    ]);
+
+    const clipId = useStudioStore
+      .getState()
+      .addSampleClip("pending-meme", { playbackRate: 2 });
+
+    useStudioStore.getState().updateSampleDuration("pending-meme", 4.2);
+
+    const clip = useStudioStore
+      .getState()
+      .clips.find((item) => item.id === clipId);
+
+    expect(clip?.duration).toBe(2.1);
+    expect(clip?.playbackRate).toBe(2);
   });
 
   it("keeps manually resized sound blocks when source metadata changes", () => {
@@ -183,6 +216,37 @@ describe("studio store", () => {
       .clips.find((item) => item.id === clipId);
 
     expect(clip?.start).toBe(1.37);
+  });
+
+  it("stores launchpad playback rate on newly placed sounds", () => {
+    addUploadedSample();
+
+    const clipId = useStudioStore.getState().addSampleClip("uploaded-meme", {
+      playbackRate: 2,
+      pitchSemitones: 12,
+    });
+    const clip = useStudioStore
+      .getState()
+      .clips.find((item) => item.id === clipId);
+
+    expect(clip?.duration).toBe(0.5);
+    expect(clip?.playbackRate).toBe(2);
+    expect(clip?.pitchSemitones).toBe(12);
+  });
+
+  it("clears placed effect clips without removing bundled pads", () => {
+    useStudioStore.getState().addSampleClip("bundled-1");
+    useStudioStore.getState().addSampleClip("bundled-2");
+
+    useStudioStore.getState().clearEffectClips();
+
+    const state = useStudioStore.getState();
+
+    expect(state.clips).toHaveLength(0);
+    expect(state.samples).toHaveLength(16);
+    expect(state.selectedClipId).toBeNull();
+    expect(state.selectedSampleId).toBeNull();
+    expect(state.playheadTime).toBe(0);
   });
 });
 

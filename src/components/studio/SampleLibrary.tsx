@@ -1,127 +1,155 @@
 "use client";
 
-import { Plus, Upload } from "lucide-react";
-import { useState } from "react";
+import { Gauge, Music2, RotateCcw } from "lucide-react";
 
-import {
-  createUploadedSampleInputs,
-  findUnsupportedAudioFile,
-} from "@/lib/audio/importSamples";
+import { Button } from "@/components/ui/Button";
+import { getLaunchpadShortcutForIndex } from "@/data/studioData";
 import { setSampleDragData } from "@/lib/timeline/drag";
-import { formatTime } from "@/lib/timeline/time";
 import { useStudioStore } from "@/store/studioStore";
+import type { SampleItem } from "@/types/studio";
 
-export function SampleLibrary() {
-  const [error, setError] = useState<string | null>(null);
+type SampleLibraryProps = {
+  launchpadPitchSemitones: number;
+  launchpadSpeed: number;
+  onLaunchpadPitchChange: (pitchSemitones: number) => void;
+  onLaunchpadSpeedChange: (speed: number) => void;
+  onResetEffects: () => void;
+  onTriggerSample: (sampleId: string) => void;
+};
+
+export function SampleLibrary({
+  launchpadPitchSemitones,
+  launchpadSpeed,
+  onLaunchpadPitchChange,
+  onLaunchpadSpeedChange,
+  onResetEffects,
+  onTriggerSample,
+}: SampleLibraryProps) {
   const samples = useStudioStore((state) => state.samples);
   const selectedSampleId = useStudioStore((state) => state.selectedSampleId);
-  const addUploadedSamples = useStudioStore(
-    (state) => state.addUploadedSamples,
-  );
-  const selectSample = useStudioStore((state) => state.selectSample);
-  const addSampleClip = useStudioStore((state) => state.addSampleClip);
-
-  async function handleSampleUpload(fileList: FileList | null) {
-    const files = Array.from(fileList ?? []);
-
-    if (files.length === 0) {
-      return;
-    }
-
-    const invalidFile = findUnsupportedAudioFile(files);
-
-    if (invalidFile) {
-      setError(`${invalidFile.name} is not a supported audio file.`);
-      return;
-    }
-
-    setError(null);
-    addUploadedSamples(await createUploadedSampleInputs(files));
-  }
 
   return (
     <section
-      className="border-t border-zinc-800 bg-zinc-950"
+      className="flex h-full min-h-0 flex-col border-t border-zinc-800 bg-zinc-950"
       data-testid="sample-library"
     >
-      <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-        <div>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-800 px-3 py-2">
+        <div className="hidden min-w-32 md:block">
           <p className="text-xs font-semibold uppercase text-zinc-500">
-            Meme Sound Library
+            Launchpad
           </p>
-          <p className="text-xs text-zinc-500">
-            Click + to place at the playhead, or drag a sound onto the timeline.
-          </p>
+          <p className="text-xs text-zinc-500">Gangnam effect pads</p>
         </div>
-        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-100 transition hover:border-amber-300">
-          <Upload size={15} />
-          Upload Meme Sound
-          <input
-            data-testid="meme-upload"
-            aria-label="Upload meme sounds"
-            className="sr-only"
-            multiple
-            type="file"
-            accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"
-            onChange={(event) => handleSampleUpload(event.target.files)}
-          />
-        </label>
+
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
+          <label className="flex h-8 min-w-0 items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-2 text-sm text-zinc-200">
+            <Music2 size={15} className="text-zinc-400" />
+            <span className="hidden sm:inline">Pitch</span>
+            <input
+              aria-label="Launchpad pitch"
+              className="w-20 accent-amber-300 sm:w-24"
+              max={12}
+              min={-12}
+              step={1}
+              type="range"
+              value={launchpadPitchSemitones}
+              onChange={(event) =>
+                onLaunchpadPitchChange(Number(event.target.value))
+              }
+            />
+            <span className="w-10 text-right font-mono text-xs text-zinc-400">
+              {formatPitch(launchpadPitchSemitones)}
+            </span>
+          </label>
+
+          <label className="flex h-8 min-w-0 items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-2 text-sm text-zinc-200">
+            <Gauge size={15} className="text-zinc-400" />
+            <span className="hidden sm:inline">Speed</span>
+            <input
+              aria-label="Launchpad speed"
+              className="w-20 accent-amber-300 sm:w-24"
+              max={2}
+              min={0.5}
+              step={0.05}
+              type="range"
+              value={launchpadSpeed}
+              onChange={(event) =>
+                onLaunchpadSpeedChange(Number(event.target.value))
+              }
+            />
+            <span className="w-10 text-right font-mono text-xs text-zinc-400">
+              {launchpadSpeed.toFixed(2)}x
+            </span>
+          </label>
+          <Button
+            aria-label="효과음 초기화"
+            className="h-8 px-2"
+            icon={<RotateCcw size={15} />}
+            onClick={onResetEffects}
+          >
+            <span className="hidden sm:inline">효과음 초기화</span>
+          </Button>
+        </div>
       </div>
 
-      {error ? (
-        <p className="px-4 pt-3 text-xs text-rose-300">{error}</p>
-      ) : null}
-
-      <div className="flex gap-3 overflow-x-auto px-4 py-4">
+      <div className="grid min-h-0 flex-1 grid-cols-4 grid-rows-4 gap-1.5 px-3 pt-2 pb-0 md:grid-cols-8 md:grid-rows-2 md:gap-2">
         {samples.length === 0 ? (
-          <div className="flex min-h-24 min-w-72 items-center rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-4 text-sm text-zinc-500">
-            No sounds loaded. Upload a meme sound to add it to the timeline.
+          <div className="col-span-full flex min-h-24 items-center rounded-md border border-dashed border-zinc-800 bg-zinc-900/40 px-4 text-sm text-zinc-500">
+            No sounds loaded.
           </div>
         ) : null}
-        {samples.map((sample) => (
-          <button
-            key={sample.id}
-            type="button"
-            className={`flex min-w-44 select-none flex-col rounded-md border px-3 py-3 text-left transition focus:outline-none focus:ring-2 focus:ring-amber-300/40 ${
-              selectedSampleId === sample.id
-                ? "border-amber-300 bg-amber-300/10"
-                : "border-zinc-800 bg-zinc-900 hover:border-amber-300"
-            }`}
-            data-testid="sample-item"
-            aria-label={`Add ${sample.name} to timeline`}
-            draggable
-            onDragStart={(event) =>
-              setSampleDragData(event.dataTransfer, sample.id)
-            }
-            onClick={() => {
-              selectSample(sample.id);
-              addSampleClip(sample.id);
-            }}
-          >
-            <span className="flex items-center justify-between gap-3">
-              <span className="truncate text-sm font-semibold text-zinc-100">
-                {sample.name}
-              </span>
-              <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[11px] uppercase text-amber-200">
-                <Plus size={14} />
-                Add
-              </span>
-            </span>
-            <span className="mt-3 flex items-center gap-2">
+        {samples.map((sample, index) => {
+          const shortcutKey = getLaunchpadShortcutForIndex(index);
+
+          return (
+            <button
+              key={sample.id}
+              type="button"
+              className={`relative flex min-h-0 select-none items-center overflow-hidden rounded-md border px-3 py-2 text-left transition active:translate-y-px focus:outline-none focus:ring-2 focus:ring-amber-300/40 ${
+                selectedSampleId === sample.id
+                  ? "border-amber-300 bg-amber-300/10"
+                  : "border-zinc-800 bg-zinc-900 hover:border-amber-300"
+              }`}
+              data-testid="sample-item"
+              aria-label={`Add ${getSampleLabel(sample)} to timeline`}
+              draggable
+              onDragStart={(event) =>
+                setSampleDragData(event.dataTransfer, sample.id)
+              }
+              onClick={() => onTriggerSample(sample.id)}
+            >
               <span
-                className="h-2.5 w-2.5 rounded-sm"
+                className="absolute inset-y-0 left-0 w-1"
                 style={{ backgroundColor: sample.color }}
               />
-              <span className="font-mono text-xs text-zinc-500">
-                Meme sound / {formatTime(sample.duration)}
+              <span className="flex w-full items-center justify-between gap-2 pl-1">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="block truncate text-[15px] font-semibold text-zinc-100 md:text-base">
+                    {getSampleLabel(sample)}
+                  </span>
+                </span>
+                {shortcutKey ? (
+                  <span className="inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border border-zinc-700 bg-zinc-950 px-1.5 font-mono text-xs uppercase text-amber-200">
+                    {shortcutKey}
+                  </span>
+                ) : null}
               </span>
-            </span>
-            <span className="mt-2 text-xs text-zinc-500">
-              {sample.fileName}
-            </span>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
     </section>
   );
+}
+
+function getSampleLabel(sample: SampleItem) {
+  return sample.name || "Sound";
+}
+
+function formatPitch(pitchSemitones: number) {
+  if (pitchSemitones === 0) {
+    return "0st";
+  }
+
+  return `${pitchSemitones > 0 ? "+" : ""}${pitchSemitones}st`;
 }

@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 
 import {
-  BUNDLED_SAMPLE_AUDIO_FILE_NAME,
-  BUNDLED_SAMPLE_AUDIO_URL,
+  BUNDLED_SAMPLE_AUDIO_FILE_NAMES,
+  BUNDLED_SAMPLE_AUDIO_URLS,
   defaultMainTrack,
 } from "@/data/studioData";
 import { MAIN_AUDIO_ASSET_ID, registerAudioAsset } from "@/lib/audio/assets";
@@ -25,8 +25,12 @@ export function usePersistedAudioAssets() {
 
   useEffect(() => {
     if (
-      mainTrack.fileName === BUNDLED_SAMPLE_AUDIO_FILE_NAME ||
-      mainTrack.objectUrl === BUNDLED_SAMPLE_AUDIO_URL
+      (mainTrack.fileName
+        ? BUNDLED_SAMPLE_AUDIO_FILE_NAMES.has(mainTrack.fileName)
+        : false) ||
+      (mainTrack.objectUrl
+        ? BUNDLED_SAMPLE_AUDIO_URLS.has(mainTrack.objectUrl)
+        : false)
     ) {
       setMainTrack({ ...defaultMainTrack });
     }

@@ -35,7 +35,7 @@ export function MainWaveform({ className, style }: MainWaveformProps) {
       waveSurferRef.current = WaveSurferModule.default.create({
         container: containerRef.current,
         url: mainTrack.objectUrl,
-        height: 50,
+        height: 56,
         normalize: true,
         interact: false,
         cursorWidth: 0,
@@ -65,14 +65,14 @@ export function MainWaveform({ className, style }: MainWaveformProps) {
   return (
     <div
       className={cn(
-        "relative h-full min-h-14 w-full overflow-hidden rounded-md border border-zinc-700 bg-zinc-950/60",
+        "h-full min-h-14 w-full overflow-hidden rounded-md border border-zinc-700 bg-zinc-950/60",
         className,
       )}
       style={style}
       data-testid="main-waveform"
     >
       {mainTrack.objectUrl ? (
-        <div ref={containerRef} className="h-full w-full px-2 py-2" />
+        <div ref={containerRef} className="h-full w-full" />
       ) : (
         <div className="flex h-full items-center px-3 text-xs font-medium text-zinc-400">
           Restoring uploaded audio for waveform playback

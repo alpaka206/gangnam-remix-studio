@@ -44,6 +44,8 @@ export interface StudioClip {
   duration: number;
   volume: number;
   loop: boolean;
+  pitchSemitones?: number;
+  playbackRate?: number;
   color: string;
   fileName?: string;
 }
